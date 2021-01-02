@@ -6,7 +6,7 @@ spec:
   # Add fields here
   size: 3
   releasename: issue-404-fixing-footer
-  projectname: project-3
+  projectname: project-2
   webimage: nginx:1.19.2
   databaseimage: mariadb:10.5
   cacheimage: redis:6.0.9-alpine

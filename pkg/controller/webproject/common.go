@@ -164,3 +164,93 @@ func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, inst
 
 	return nil, nil
 }
+
+func (r *ReconcileWebproject) ensureCommonConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
+	found := &corev1.ConfigMap{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      cm.Name,
+		Namespace: instance.Namespace,
+	}, found)
+	if err != nil && errors.IsNotFound(err) {
+
+		// Create the configmap
+		log.Info("Creating a new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
+		err = r.client.Create(context.TODO(), cm)
+
+		if err != nil {
+			// Creation failed
+			log.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
+			return &reconcile.Result{}, err
+		}
+		// Creation was successful
+		return nil, nil
+
+	} else if err != nil {
+		// Error that isn't due to the configmap not existing
+		log.Error(err, "Failed to get ConfigMap")
+		return &reconcile.Result{}, err
+	}
+
+	return nil, nil
+}
+
+func (r *ReconcileWebproject) ensureSecret(request reconcile.Request, instance *wpv1.WebProject, secret *corev1.Secret) (*reconcile.Result, error) {
+	found := &corev1.Secret{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      secret.Name,
+		Namespace: instance.Namespace,
+	}, found)
+	if err != nil && errors.IsNotFound(err) {
+
+		// Create the secret
+		log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
+		err = r.client.Create(context.TODO(), secret)
+
+		if err != nil {
+			// Creation failed
+			log.Error(err, "Failed to create new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
+			return &reconcile.Result{}, err
+		}
+		// Creation was successful
+		return nil, nil
+
+	} else if err != nil {
+		// Error that isn't due to the secret not existing
+		log.Error(err, "Failed to get Secret")
+		return &reconcile.Result{}, err
+	}
+
+	return nil, nil
+}
+
+func (r *ReconcileWebproject) ensureAWSSecret(request reconcile.Request, instance *wpv1.WebProject, secret *corev1.Secret) (*reconcile.Result, error) {
+	found := &corev1.Secret{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      secret.Name,
+		Namespace: instance.Namespace,
+	}, found)
+	if err != nil && errors.IsNotFound(err) {
+
+		// Create the secret
+		log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
+		err = r.client.Create(context.TODO(), secret)
+
+		if err != nil {
+			// Creation failed
+			log.Error(err, "Failed to create new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
+			return &reconcile.Result{}, err
+		}
+		// Creation was successful
+		return nil, nil
+
+	} else if err != nil {
+		// Error that isn't due to the secret not existing
+		log.Error(err, "Failed to get Secret")
+		return &reconcile.Result{}, err
+	}
+
+	return nil, nil
+}

@@ -65,8 +65,13 @@ func (r *ReconcileWebproject) serviceForWebproject(cr *wpv1.WebProject) *corev1.
 
 			Ports: []corev1.ServicePort{
 				{
-					Port: 80,
-					Name: "port",
+					Port: 80, // externalPort
+					TargetPort: intstr.IntOrString{
+						Type:   Int,
+						IntVal: 80,
+					}, // internalPort
+					Protocol: "TCP",
+					Name:     "port",
 				},
 			},
 			Type: corev1.ServiceTypeClusterIP,
@@ -89,8 +94,69 @@ func (r *ReconcileWebproject) envConfigMapForWebproject(cr *wpv1.WebProject) *co
 		},
 		Data: map[string]string{
 			"MYSQL_USER":     cr.Spec.DatabaseUser,
-			"MYSQL_PASSWORD": cr.Spec.DatabaseUserPassword,
 			"MYSQL_DATABASE": cr.Spec.DatabaseName,
+		},
+	}
+	// Set Operator instance as the owner and controller
+	controllerutil.SetControllerReference(cr, dep, r.scheme)
+	return dep
+}
+
+// configMapForWebproject returns a webproject configmap object
+func (r *ReconcileWebproject) secretForWebproject(cr *wpv1.WebProject) *corev1.Secret {
+
+	dep := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workloadName(cr, "secret"),
+			Namespace: cr.Namespace,
+			Labels:    labels(cr, "config"),
+		},
+		Data: map[string][]byte{
+			"MYSQL_PASSWORD": []byte(cr.Spec.DatabaseUserPassword),
+		},
+	}
+	// Set Operator instance as the owner and controller
+	controllerutil.SetControllerReference(cr, dep, r.scheme)
+	return dep
+}
+
+// awsSecretForWebproject returns a webproject configmap object
+func (r *ReconcileWebproject) awsSecretForWebproject(cr *wpv1.WebProject) *corev1.Secret {
+
+	dep := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workloadName(cr, "aws-secret"),
+			Namespace: cr.Namespace,
+			Labels:    labels(cr, "config"),
+		},
+		Data: map[string][]byte{
+			"AWS_ACCESS_KEY_ID":     []byte("changeme"),
+			"AWS_SECRET_ACCESS_KEY": []byte("changeme"),
+			"AWS_DEFAULT_REGION":    []byte("changeme"),
+			"AWS_BUCKET":            []byte("changeme"),
+		},
+	}
+	// Set Operator instance as the owner and controller
+	controllerutil.SetControllerReference(cr, dep, r.scheme)
+	return dep
+}
+
+// commonConfigMapForWebproject returns a webproject configmap object
+func (r *ReconcileWebproject) commonConfigMapForWebproject(cr *wpv1.WebProject) *corev1.ConfigMap {
+
+	dep := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workloadName(cr, "common-config"),
+			Namespace: cr.Namespace,
+			Labels:    labels(cr, "config"),
+		},
+		Data: map[string]string{
+			"BUILD_ID":               "changeme",
+			"DOCROOT":                "changeme",
+			"PROJECT_ENV":            "changeme",
+			"CI":                     "true",
+			"PHP_MAX_EXECUTION_TIME": "changeme",
+			"PHP_MEMORY_LIMIT":       "changeme",
 		},
 	}
 	// Set Operator instance as the owner and controller
@@ -108,7 +174,7 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wpv1.WebProject) *network
 				ServiceName: workloadName(cr, "svc"),
 				ServicePort: intstr.IntOrString{
 					Type:   Int,
-					IntVal: 8080,
+					IntVal: 80,
 				},
 			},
 		},
@@ -139,6 +205,7 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wpv1.WebProject) *network
 	ingress := &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "ingress"),
+			Labels:    labels(cr, "ingress"),
 			Namespace: cr.Namespace,
 			Annotations: map[string]string{
 				"kubernetes.io/ingress.class":                   "nginx",
@@ -259,8 +326,7 @@ func labels(cr *wpv1.WebProject, component string) map[string]string {
 		"app.kubernetes.io/part-of":   cr.Spec.ReleaseName,
 		"app.kubernetes.io/component": component,
 		"app.kubernetes.io/version":   cr.Spec.ReleaseName,
-		"purpose":                     "dev-project",
-		"webcontainer":                "true",
+		"release":                     cr.Spec.ReleaseName,
 	}
 }
 
@@ -269,13 +335,36 @@ func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 	return corev1.Container{
 		Image: cr.Spec.WebImage,
 		Name:  "web",
-		EnvFrom: []corev1.EnvFromSource{{
-			ConfigMapRef: &corev1.ConfigMapEnvSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: workloadName(cr, "env-config"),
+		EnvFrom: []corev1.EnvFromSource{
+			{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: workloadName(cr, "env-config"),
+					},
 				},
 			},
-		}},
+			{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: workloadName(cr, "common-config"),
+					},
+				},
+			},
+			{
+				SecretRef: &corev1.SecretEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: workloadName(cr, "secret"),
+					},
+				},
+			},
+			{
+				SecretRef: &corev1.SecretEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: workloadName(cr, "aws-secret"),
+					},
+				},
+			},
+		},
 		Env: []corev1.EnvVar{
 			{
 				Name: "DB_HOST",

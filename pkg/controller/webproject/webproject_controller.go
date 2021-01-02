@@ -71,6 +71,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &wpv1.WebProject{},
+	})
+
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &networkingv1beta1.Ingress{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &wpv1.WebProject{},
@@ -171,5 +180,21 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 	if result != nil {
 		return *result, err
 	}
+
+	result, err = r.ensureCommonConfigMap(request, webproject, r.commonConfigMapForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
+	result, err = r.ensureSecret(request, webproject, r.secretForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
+	result, err = r.ensureAWSSecret(request, webproject, r.awsSecretForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
 	return reconcile.Result{}, nil
 }
