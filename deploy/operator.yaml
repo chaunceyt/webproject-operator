@@ -16,10 +16,10 @@ spec:
       containers:
         - name: webproject-operator
           # Replace this with the built image name
-          image: REPLACE_IMAGE
+          image: chaunceyt/webproject-operator:v0.0.1
           command:
           - webproject-operator
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
