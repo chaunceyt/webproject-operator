@@ -1,8 +1,13 @@
 # WebProject Operator
 
-After reading this article [Create a Kubernetes Operator in Golang to automatically manage a simple, stateful application](https://developers.redhat.com/blog/2020/12/16/create-a-kubernetes-operator-in-golang-to-automatically-manage-a-simple-stateful-application/) I decided to develop this experimental operator. 
+I currently manage a small GKE cluster. This cluster has two types of nodes, builder and worker. The builder nodes run gitlab-runners on `shared` and `project specific` builder node pools. The worker nodes are used by all of the projects using the cluster. Each project gets a namespace and can have a workload per branch. Currently the workload is generated via a custom helm chart, embeded in a "project starter" tool. Keeping the "project starter" and projects that started from the "project starter" in sync introduces some toil.
 
-The is Operator is to demostrate creating a WebProject kind of resource using Kubernetes controller pattern. The operator is to show how to build a custom controller that encapsulates specific domain/application level knowledge. The Operator is built using the operator-sdk framework.
+After reading this article [Create a Kubernetes Operator in Golang to automatically manage a simple, stateful application](https://developers.redhat.com/blog/2020/12/16/create-a-kubernetes-operator-in-golang-to-automatically-manage-a-simple-stateful-application/) and reviewing this [git repo](https://github.com/priyanka19-98/Wordpress-Operator). I decided to develop this experimental operator to see if I could reduce the toil of maintaining the helm chart.
+
+The Operator is built using the `operator-sdk-v0.15.2` framework to demostrate
+
+- creating a WebProject kind of resource using Kubernetes controller pattern. 
+- creating a custom controller that encapsulates specific domain/application level knowledge of running mostly Drupal development projects in the cluster.
 
 The Operator manages the following objects.
 
@@ -12,12 +17,12 @@ The Operator manages the following objects.
 - Ingress
 - Service
 - Secrets
+ 
 
 ## About the kind: Deployment
 
-The deployment object managed by this operator creates a number of sidecar containers
+The deployment object managed by this operator creates a `web` container and a number of other sidecar containers
 
-- web (primary)
 - cli (docksal default)
 - database (mysql, mariadb)
 - cache (memcache, redis)
@@ -80,7 +85,6 @@ operator-sdk-v0.15.2 run --local
 operator-sdk-v0.15.2 build operator:v0.0.1
 kind load docker-image operator:v0.0.1
 
-
 ```
 
 Create a webproject `kubectl apply -f deploy/crds/webproject-1.yaml`
@@ -110,4 +114,18 @@ persistentvolumeclaim/issue-403-fixing-footer-files   Bound    pvc-e6f4447b-2482
 
 NAME                                                 CLASS    HOSTS                                     ADDRESS   PORTS     AGE
 ingress.extensions/issue-403-fixing-footer-ingress   <none>   issue-403-fixing-footer.kube.domain.tld             80, 443   12m
+```
+
+
+### Install to test out
+
+- Checkout this repo
+- NOTICE: not production software.
+
+```
+kubectl create ns webproject-1
+kubectl apply -f deploy/crds/operator.yaml -n webproject-1
+kubectl apply -f deploy/crds/webproject-1.yaml -n webproject-1
+
+kubectl get all,secrets,cm,pvc,ing -l release=issue-403-fixing-footer -n webproject-1
 ```
