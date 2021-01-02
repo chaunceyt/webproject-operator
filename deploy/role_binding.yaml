@@ -1,0 +1,11 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: webproject-operator
+subjects:
+- kind: ServiceAccount
+  name: webproject-operator
+roleRef:
+  kind: Role
+  name: webproject-operator
+  apiGroup: rbac.authorization.k8s.io

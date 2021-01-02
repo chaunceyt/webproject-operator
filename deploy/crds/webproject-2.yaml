@@ -1,0 +1,22 @@
+apiVersion: wp.com/v1
+kind: WebProject
+metadata:
+  name: issue-404-fixing-footer
+spec:
+  # Add fields here
+  size: 3
+  releasename: issue-404-fixing-footer
+  projectname: project-3
+  webimage: nginx:1.19.2
+  databaseimage: mariadb:10.5
+  cacheimage: redis:6.0.9-alpine
+  cacheport: 6379
+  filestoragesize: 5Gi
+  filestoragemountpath: /var/www/html/sites/default/files
+  databasename: project-2_db
+  databaseuser: admin
+  databaseuserpassword: "admin123#"
+  databasestoragesize: 5Gi
+  databasestoragemountpath: /var/lib/mysql
+  databaserootpassword: "412qwepdS"
+  projectdomainname: kube.domain.tld
