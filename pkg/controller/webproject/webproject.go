@@ -202,6 +202,8 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wpv1.WebProject) *network
 	// Add auth - nginx.ingress.kubernetes.io/auth-url: https://auth.domain.com/prod/auth
 	// Add signin - nginx.ingress.kubernetes.io/auth-signin: https://auth.domain.com/prod/signin
 	// Add support for rewriting of target - "nginx.ingress.kubernetes.io/rewrite-target":    "/$2",
+	// Add nginx.ingress.kubernetes.io/auth-tls-verify-client: "off" and nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+	// if the project is using gatsby custom certs.
 	ingress := &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "ingress"),
@@ -221,6 +223,7 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wpv1.WebProject) *network
 	return ingress
 }
 
+// pvcForWebproject - persistent volume claim for static files.
 func (r *ReconcileWebproject) pvcForWebproject(cr *wpv1.WebProject) *corev1.PersistentVolumeClaim {
 	pvc := &corev1.PersistentVolumeClaim{
 
@@ -249,6 +252,7 @@ func (r *ReconcileWebproject) pvcForWebproject(cr *wpv1.WebProject) *corev1.Pers
 
 }
 
+// pvcForMysql - persistent volume claim for mysql|mariadb data path /var/lib/mysql
 func (r *ReconcileWebproject) pvcForMysql(cr *wpv1.WebProject) *corev1.PersistentVolumeClaim {
 	pvc := &corev1.PersistentVolumeClaim{
 
