@@ -7,6 +7,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -37,6 +38,7 @@ type DockerConfigEntry struct {
 
 func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instance *wpv1.WebProject, dep *appsv1.Deployment) (*reconcile.Result, error) {
 	found := &appsv1.Deployment{}
+	ctx := context.Background()
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
 		Name:      dep.Name,
@@ -63,6 +65,18 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 		return &reconcile.Result{}, err
 	}
 
+	deploy := r.deploymentForWebproject(instance)
+	// check to see if the webimage found is different that the WebProject.Spec.WebImage.
+	if !equality.Semantic.DeepDerivative(found.Spec.Template.Spec.Containers[0].Image, deploy.Spec.Template.Spec.Containers[0].Image) {
+		log.Info("Updating Deployment", "Deployment.Namespace", deploy.Namespace, "Deployment.Name", deploy.Name)
+		err := r.client.Update(ctx, deploy)
+		if err != nil {
+			log.Error(err, "Failed to update Deployment", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+			return &reconcile.Result{}, err
+		}
+		return nil, nil
+
+	}
 	return nil, nil
 
 }
