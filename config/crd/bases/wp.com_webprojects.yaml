@@ -1,0 +1,100 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: webprojects.wp.com
+spec:
+  group: wp.com
+  names:
+    kind: WebProject
+    listKind: WebProjectList
+    plural: webprojects
+    singular: webproject
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: WebProject is the Schema for the webprojects API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: WebProjectSpec defines the desired state of WebProject
+            properties:
+              cacheimage:
+                type: string
+              cacheport:
+                format: int32
+                type: integer
+              databaseimage:
+                type: string
+              databasename:
+                type: string
+              databaserootpassword:
+                type: string
+              databasestoragemountpath:
+                type: string
+              databasestoragesize:
+                type: string
+              databaseuser:
+                type: string
+              databaseuserpassword:
+                type: string
+              filestoragemountpath:
+                type: string
+              filestoragesize:
+                type: string
+              projectdomainname:
+                type: string
+              projectname:
+                type: string
+              releasename:
+                type: string
+              webimage:
+                type: string
+            required:
+            - cacheimage
+            - cacheport
+            - databaseimage
+            - databasename
+            - databaserootpassword
+            - databasestoragemountpath
+            - databasestoragesize
+            - databaseuser
+            - databaseuserpassword
+            - filestoragemountpath
+            - filestoragesize
+            - projectdomainname
+            - projectname
+            - releasename
+            - webimage
+            type: object
+          status:
+            description: WebProjectStatus defines the observed state of WebProject
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

@@ -36,6 +36,8 @@ spec:
             cacheport:
               format: int32
               type: integer
+            cliimage:
+              type: string
             databaseimage:
               type: string
             databasename:
@@ -50,9 +52,19 @@ spec:
               type: string
             databaseuserpassword:
               type: string
+            dockerconfigregistryurl:
+              type: string
+            dockerconfiguseremail:
+              type: string
+            dockerconfigusername:
+              type: string
+            dockerconfiguserpassword:
+              type: string
             filestoragemountpath:
               type: string
             filestoragesize:
+              type: string
+            initcontainerscript:
               type: string
             projectdomainname:
               type: string
@@ -65,6 +77,7 @@ spec:
           required:
           - cacheimage
           - cacheport
+          - cliimage
           - databaseimage
           - databasename
           - databaserootpassword

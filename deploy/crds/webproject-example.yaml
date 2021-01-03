@@ -1,0 +1,51 @@
+apiVersion: wp.com/v1
+kind: WebProject
+metadata:
+  name: developer-cthorn-master
+spec:
+  # Project information
+  projectname: developer-cthorn
+  projectdomainname: kube.domain.tld
+  
+  # RELEASE_NAME
+  releasename: developer-cthorn-master
+
+  # default web image
+  webimage: nginx:1.19.2
+
+  # Sidecar Containers
+  # cli sidecar image 
+  cliimage: outrigger/cli:2-php7.3
+  
+  # database sidecar image
+  databaseimage: mariadb:10.5
+  
+  # Database information
+  databasename: developer_cthorn_db
+  databaseuser: admin
+  databaseuserpassword: "admin123#"
+  databasestoragesize: 5Gi
+  databasestoragemountpath: /var/lib/mysql
+  databaserootpassword: "412qwepdS"
+
+  # cache sidecar image
+  cacheimage: redis:6.0.9-alpine
+  cacheport: 6379
+
+  # file storege size and mountpath
+  filestoragesize: 5Gi
+  filestoragemountpath: /var/www/html/sites/default/files
+
+  # docker config information
+  dockerconfigusername: cthorn
+  dockerconfiguserpassword: simple
+  dockerconfiguseremail: cthorn@domain.tld
+  dockerconfigregistryurl: registry.gitlab.com
+
+  # initcontainer script
+  initcontainerscript: |-
+    #!/bin/bash
+    touch /data/date.txt
+    touch /data/env-data.txt
+    echo date > /data/data.txt
+    env > /data/env-data.txt

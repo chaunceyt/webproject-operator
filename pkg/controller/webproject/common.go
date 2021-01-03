@@ -12,6 +12,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+// create docker config for workload.
+
+// These Docker Config datatypes have been pulled from
+// "k8s.io/kubernetes/pkg/credentialprovider".
+// multiple k8s packages import the same package, we don't yet have the tooling
+// to flatten the deps.
+// The specific package in this case is golog.
+
+// DockerConfigJson represents ~/.docker/config.json file info.
+type DockerConfigJson struct {
+	Auths DockerConfig `json:"auths"`
+}
+
+// DockerConfig represents the config file used by the docker CLI.
+type DockerConfig map[string]DockerConfigEntry
+
+// DockerConfigEntry represents an Auth entry in the dockerconfigjson.
+type DockerConfigEntry struct {
+	Username string
+	Password string
+	Email    string
+}
+
 func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instance *wpv1.WebProject, dep *appsv1.Deployment) (*reconcile.Result, error) {
 	found := &appsv1.Deployment{}
 
@@ -165,6 +188,36 @@ func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, inst
 	return nil, nil
 }
 
+func (r *ReconcileWebproject) ensureInitContainerConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
+	found := &corev1.ConfigMap{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      cm.Name,
+		Namespace: instance.Namespace,
+	}, found)
+	if err != nil && errors.IsNotFound(err) {
+
+		// Create the configmap
+		log.Info("Creating a new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
+		err = r.client.Create(context.TODO(), cm)
+
+		if err != nil {
+			// Creation failed
+			log.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
+			return &reconcile.Result{}, err
+		}
+		// Creation was successful
+		return nil, nil
+
+	} else if err != nil {
+		// Error that isn't due to the configmap not existing
+		log.Error(err, "Failed to get ConfigMap")
+		return &reconcile.Result{}, err
+	}
+
+	return nil, nil
+}
+
 func (r *ReconcileWebproject) ensureCommonConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
 	found := &corev1.ConfigMap{}
 
@@ -196,6 +249,36 @@ func (r *ReconcileWebproject) ensureCommonConfigMap(request reconcile.Request, i
 }
 
 func (r *ReconcileWebproject) ensureSecret(request reconcile.Request, instance *wpv1.WebProject, secret *corev1.Secret) (*reconcile.Result, error) {
+	found := &corev1.Secret{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      secret.Name,
+		Namespace: instance.Namespace,
+	}, found)
+	if err != nil && errors.IsNotFound(err) {
+
+		// Create the secret
+		log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
+		err = r.client.Create(context.TODO(), secret)
+
+		if err != nil {
+			// Creation failed
+			log.Error(err, "Failed to create new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
+			return &reconcile.Result{}, err
+		}
+		// Creation was successful
+		return nil, nil
+
+	} else if err != nil {
+		// Error that isn't due to the secret not existing
+		log.Error(err, "Failed to get Secret")
+		return &reconcile.Result{}, err
+	}
+
+	return nil, nil
+}
+
+func (r *ReconcileWebproject) ensureDockerConfigSecret(request reconcile.Request, instance *wpv1.WebProject, secret *corev1.Secret) (*reconcile.Result, error) {
 	found := &corev1.Secret{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{

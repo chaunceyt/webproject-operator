@@ -186,12 +186,22 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
+	result, err = r.ensureInitContainerConfigMap(request, webproject, r.initContainerConfigMapForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
 	result, err = r.ensureSecret(request, webproject, r.secretForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
 	result, err = r.ensureAWSSecret(request, webproject, r.awsSecretForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
+	result, err = r.ensureDockerConfigSecret(request, webproject, r.dockerconfigSecretForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}

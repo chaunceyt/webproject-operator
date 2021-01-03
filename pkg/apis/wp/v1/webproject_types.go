@@ -6,21 +6,27 @@ import (
 
 // WebProjectSpec defines the desired state of WebProject
 type WebProjectSpec struct {
-	ProjectDomainName      string `json:"projectdomainname"`
-	ReleaseName            string `json:"releasename"`
-	ProjectName            string `json:"projectname"`
-	WebImage               string `json:"webimage"`
-	CacheImage             string `json:"cacheimage"`
-	CachePort              int32  `json:"cacheport"`
-	DatabaseImage          string `json:"databaseimage"`
-	FileStorageSize        string `json:"filestoragesize"`
-	FileStorageMountPath   string `json:"filestoragemountpath"`
-	DatabaseName           string `json:"databasename"`
-	DatabaseUser           string `json:"databaseuser"`
-	DatabaseUserPassword   string `json:"databaseuserpassword"`
-	DatabaseStorageSize    string `json:"databasestoragesize"`
-	DatabaseStoreMountPath string `json:"databasestoragemountpath"`
-	DatabaseRootPassword   string `json:"databaserootpassword"`
+	ProjectDomainName       string `json:"projectdomainname"`
+	ReleaseName             string `json:"releasename"`
+	ProjectName             string `json:"projectname"`
+	WebImage                string `json:"webimage"`
+	CLIImage                string `json:"cliimage"`
+	CacheImage              string `json:"cacheimage"`
+	CachePort               int32  `json:"cacheport"`
+	DatabaseImage           string `json:"databaseimage"`
+	FileStorageSize         string `json:"filestoragesize"`
+	FileStorageMountPath    string `json:"filestoragemountpath"`
+	DatabaseName            string `json:"databasename"`
+	DatabaseUser            string `json:"databaseuser"`
+	DatabaseUserPassword    string `json:"databaseuserpassword"`
+	DatabaseStorageSize     string `json:"databasestoragesize"`
+	DatabaseStoreMountPath  string `json:"databasestoragemountpath"`
+	DatabaseRootPassword    string `json:"databaserootpassword"`
+	DockerConfigUsername    string `json:"dockerconfigusername,omitempty"`
+	DockerConfigPassword    string `json:"dockerconfiguserpassword,omitempty"`
+	DockerConfigEmail       string `json:"dockerconfiguseremail,omitempty"`
+	DockerConfigRegistryURL string `json:"dockerconfigregistryurl,omitempty"`
+	InitContainerScript     string `json:"initcontainerscript,omitempty"`
 }
 
 // WebProjectStatus defines the observed state of WebProject

@@ -1,12 +1,15 @@
 package webproject
 
 import (
+	"encoding/json"
+
 	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -40,6 +43,15 @@ func (r *ReconcileWebproject) deploymentForWebproject(cr *wpv1.WebProject) *apps
 				Spec: webProjectPodSpec(cr),
 			},
 		},
+	}
+
+	// If project uses private registry add ImagePullSecrets to object.
+	if cr.Spec.DockerConfigRegistryURL != "" && cr.Spec.DockerConfigUsername != "" && cr.Spec.DockerConfigPassword != "" {
+		deployment.Spec.Template.Spec.ImagePullSecrets = append(
+			deployment.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
+				Name: workloadName(cr, "docker-config"),
+			},
+		)
 	}
 
 	controllerutil.SetControllerReference(cr, deployment, r.scheme)
@@ -102,7 +114,40 @@ func (r *ReconcileWebproject) envConfigMapForWebproject(cr *wpv1.WebProject) *co
 	return dep
 }
 
-// configMapForWebproject returns a webproject configmap object
+// secretForWebproject returns a webproject configmap object
+func (r *ReconcileWebproject) dockerconfigSecretForWebproject(cr *wpv1.WebProject) *corev1.Secret {
+	// create dockerconfig json object.
+	dockerEntry := DockerConfigEntry{
+		Username: cr.Spec.DockerConfigUsername,
+		Password: cr.Spec.DockerConfigPassword,
+	}
+	registryURL := cr.Spec.DockerConfigRegistryURL
+
+	dockerConfig := DockerConfigJson{
+		Auths: map[string]DockerConfigEntry{
+			registryURL: dockerEntry,
+		},
+	}
+	secretData, err := json.Marshal(dockerConfig)
+
+	if err != nil {
+		log.Error(err, "Failed to get docker Secret", "Secret.Namespace", cr.Namespace, "Secret.Name", cr.Name)
+	}
+	dep := &corev1.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      workloadName(cr, "docker-config"),
+			Namespace: cr.Namespace,
+			Labels:    labels(cr, "config"),
+		},
+		Type: "kubernetes.io/dockerconfigjson",
+		Data: map[string][]byte{".dockerconfigjson": secretData},
+	}
+	// Set Operator instance as the owner and controller
+	controllerutil.SetControllerReference(cr, dep, r.scheme)
+	return dep
+}
+
+// secretForWebproject returns a webproject configmap object
 func (r *ReconcileWebproject) secretForWebproject(cr *wpv1.WebProject) *corev1.Secret {
 
 	dep := &corev1.Secret{
@@ -134,6 +179,24 @@ func (r *ReconcileWebproject) awsSecretForWebproject(cr *wpv1.WebProject) *corev
 			"AWS_SECRET_ACCESS_KEY": []byte("changeme"),
 			"AWS_DEFAULT_REGION":    []byte("changeme"),
 			"AWS_BUCKET":            []byte("changeme"),
+		},
+	}
+	// Set Operator instance as the owner and controller
+	controllerutil.SetControllerReference(cr, dep, r.scheme)
+	return dep
+}
+
+// commonConfigMapForWebproject returns a webproject configmap object
+func (r *ReconcileWebproject) initContainerConfigMapForWebproject(cr *wpv1.WebProject) *corev1.ConfigMap {
+
+	dep := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workloadName(cr, "init-container"),
+			Namespace: cr.Namespace,
+			Labels:    labels(cr, "config"),
+		},
+		Data: map[string]string{
+			"init-container.sh": cr.Spec.InitContainerScript,
 		},
 	}
 	// Set Operator instance as the owner and controller
@@ -283,13 +346,38 @@ func (r *ReconcileWebproject) pvcForMysql(cr *wpv1.WebProject) *corev1.Persisten
 
 // webProjectPodSpect - pod for webproject with multiple sidecars.
 func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
-	return corev1.PodSpec{
+	webpod := corev1.PodSpec{
 		AutomountServiceAccountToken: createBool(false),
+		InitContainers: []corev1.Container{
+			{
+				Name:            "webdata",
+				Image:           cr.Spec.CLIImage,
+				Command:         []string{"bash", "-c", "/script/init-container.sh"},
+				ImagePullPolicy: corev1.PullIfNotPresent,
+				SecurityContext: &corev1.SecurityContext{
+					RunAsNonRoot:             createBool(false),
+					ReadOnlyRootFilesystem:   createBool(false),
+					AllowPrivilegeEscalation: createBool(false),
+				},
+				VolumeMounts: []corev1.VolumeMount{
+					{
+						Name:      "webroot",
+						MountPath: "/data",
+					},
+					{
+						Name:      "files-storage",
+						MountPath: "/cmsfiles",
+					},
+					{
+						Name:      "init-container",
+						MountPath: "/script/init-container.sh",
+						SubPath:   "init-container.sh",
+					},
+				},
+			},
+		},
 		Containers: []corev1.Container{
 			webContainerSpec(cr),
-			cliContainerSpec(cr),
-			databaseContainerSpec(cr),
-			cacheContainerSpec(cr),
 		},
 
 		Volumes: []corev1.Volume{
@@ -319,8 +407,45 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 					},
 				},
 			},
+			{
+				Name: "aws-credentials",
+				VolumeSource: corev1.VolumeSource{
+
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: workloadName(cr, "aws-secret"),
+					},
+				},
+			},
+			{
+				Name: "init-container",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: workloadName(cr, "init-container"),
+						},
+						DefaultMode: createInt32(0777),
+					},
+				},
+			},
 		},
 	}
+
+	// append database sidecar
+	if cr.Spec.DatabaseImage != "" {
+		webpod.Containers = append(webpod.Containers, databaseContainerSpec(cr))
+	}
+
+	// append cli sidecar
+	if cr.Spec.CLIImage != "" {
+		webpod.Containers = append(webpod.Containers, cliContainerSpec(cr))
+	}
+
+	// append cache sidecar
+	if cr.Spec.CacheImage != "" {
+		webpod.Containers = append(webpod.Containers, cacheContainerSpec(cr))
+	}
+
+	return webpod
 }
 
 // labels - labels used on all objects.
@@ -336,7 +461,7 @@ func labels(cr *wpv1.WebProject, component string) map[string]string {
 
 // webContainerSpec - primary contianer for webproject
 func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
-	return corev1.Container{
+	container := corev1.Container{
 		Image: cr.Spec.WebImage,
 		Name:  "web",
 		EnvFrom: []corev1.EnvFromSource{
@@ -427,12 +552,19 @@ func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 				MountPath: cr.Spec.FileStorageMountPath,
 			},
 		},
+		SecurityContext: &corev1.SecurityContext{
+			RunAsNonRoot:             createBool(false),
+			ReadOnlyRootFilesystem:   createBool(false),
+			AllowPrivilegeEscalation: createBool(false),
+		},
 	}
+
+	return container
 }
 
 // cliContainerSpec - cli sidecar
 func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
-	return corev1.Container{
+	container := corev1.Container{
 		Image: "outrigger/cli:2-php7.3",
 		Name:  "cli",
 
@@ -478,11 +610,13 @@ func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
 			},
 		},
 	}
+
+	return container
 }
 
 // databaseContainerSpec - database sidecar
 func databaseContainerSpec(cr *wpv1.WebProject) corev1.Container {
-	return corev1.Container{
+	container := corev1.Container{
 		Image: cr.Spec.DatabaseImage,
 		Name:  "database",
 
@@ -516,11 +650,13 @@ func databaseContainerSpec(cr *wpv1.WebProject) corev1.Container {
 			},
 		},
 	}
+
+	return container
 }
 
 // cacheContainerSpec - cache sidecar (memcached or redis)
 func cacheContainerSpec(cr *wpv1.WebProject) corev1.Container {
-	return corev1.Container{
+	container := corev1.Container{
 		Image: cr.Spec.CacheImage,
 		Name:  "cache",
 
@@ -529,6 +665,8 @@ func cacheContainerSpec(cr *wpv1.WebProject) corev1.Container {
 			Name:          "cache-port",
 		}},
 	}
+
+	return container
 }
 
 // workloadName
