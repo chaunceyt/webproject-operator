@@ -330,6 +330,7 @@ func (r *ReconcileWebproject) pvcForWebproject(cr *wpv1.WebProject) *corev1.Pers
 }
 
 // pvcForMysql - persistent volume claim for mysql|mariadb data path /var/lib/mysql
+// TODO: add support to create VolumeSnapshot from current pvc and use that PVC for webproject
 func (r *ReconcileWebproject) pvcForMysql(cr *wpv1.WebProject) *corev1.PersistentVolumeClaim {
 	pvc := &corev1.PersistentVolumeClaim{
 

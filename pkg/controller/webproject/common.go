@@ -29,12 +29,6 @@ import (
 
 // create docker config for workload.
 
-// These Docker Config datatypes have been pulled from
-// "k8s.io/kubernetes/pkg/credentialprovider".
-// multiple k8s packages import the same package, we don't yet have the tooling
-// to flatten the deps.
-// The specific package in this case is golog.
-
 // DockerConfigJson represents ~/.docker/config.json file info.
 type DockerConfigJson struct {
 	Auths DockerConfig `json:"auths"`
@@ -70,8 +64,8 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 			log.Error(err, "Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 			return &reconcile.Result{}, err
 		}
-		// Deployment was successful
-		return nil, nil
+		// Deployment was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the deployment not existing
@@ -88,7 +82,7 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 			log.Error(err, "Failed to update Deployment", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
 			return &reconcile.Result{}, err
 		}
-		return nil, nil
+		return &reconcile.Result{Requeue: true}, nil
 
 	}
 	return nil, nil
@@ -113,8 +107,8 @@ func (r *ReconcileWebproject) ensureService(request reconcile.Request, instance 
 			log.Error(err, "Failed to create new Service", "Service.Namespace", s.Namespace, "Service.Name", s.Name)
 			return &reconcile.Result{}, err
 		}
-		// Creation was successful
-		return nil, nil
+		// Creation was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the service not existing
@@ -143,8 +137,8 @@ func (r *ReconcileWebproject) ensurePVC(request reconcile.Request, instance *wpv
 			log.Error(err, "Failed to create new PVC", "PVC.Namespace", s.Namespace, "PVC.Name", s.Name)
 			return &reconcile.Result{}, err
 		}
-		// Creation was successful
-		return nil, nil
+		// Creation was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the pvc not existing
@@ -174,8 +168,8 @@ func (r *ReconcileWebproject) ensureIngress(request reconcile.Request, instance 
 			log.Error(err, "Failed to create new Ingress", "Ingress.Namespace", ing.Namespace, "Ingress.Name", ing.Name)
 			return &reconcile.Result{}, err
 		}
-		// Creation was successful
-		return nil, nil
+		// Creation was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the ingress not existing
@@ -204,8 +198,8 @@ func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, inst
 			log.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
 			return &reconcile.Result{}, err
 		}
-		// Creation was successful
-		return nil, nil
+		// Creation was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the configmap not existing
@@ -218,6 +212,7 @@ func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, inst
 
 func (r *ReconcileWebproject) ensureInitContainerConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
 	found := &corev1.ConfigMap{}
+	ctx := context.Background()
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
 		Name:      cm.Name,
@@ -234,8 +229,8 @@ func (r *ReconcileWebproject) ensureInitContainerConfigMap(request reconcile.Req
 			log.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
 			return &reconcile.Result{}, err
 		}
-		// Creation was successful
-		return nil, nil
+		// Creation was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the configmap not existing
@@ -243,11 +238,23 @@ func (r *ReconcileWebproject) ensureInitContainerConfigMap(request reconcile.Req
 		return &reconcile.Result{}, err
 	}
 
+	configMap := r.initContainerConfigMapForWebproject(instance)
+	if !equality.Semantic.DeepDerivative(found.Data, configMap.Data) {
+		log.Info("Updating ConfigMap", "ConfigMap.Namespace", found.Namespace, "ConfigMap.Name", found.Name)
+		err := r.client.Update(ctx, configMap)
+		if err != nil {
+			log.Error(err, "Failed to update ConfigMap", "ConfigMap.Namespace", found.Namespace, "ConfigMap.Name", found.Name)
+			return &reconcile.Result{}, err
+		}
+		return &reconcile.Result{Requeue: true}, nil
+	}
+
 	return nil, nil
 }
 
 func (r *ReconcileWebproject) ensureCommonConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
 	found := &corev1.ConfigMap{}
+	ctx := context.Background()
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
 		Name:      cm.Name,
@@ -264,13 +271,24 @@ func (r *ReconcileWebproject) ensureCommonConfigMap(request reconcile.Request, i
 			log.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
 			return &reconcile.Result{}, err
 		}
-		// Creation was successful
-		return nil, nil
+		// Creation was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the configmap not existing
 		log.Error(err, "Failed to get ConfigMap")
 		return &reconcile.Result{}, err
+	}
+
+	configMap := r.commonConfigMapForWebproject(instance)
+	if !equality.Semantic.DeepDerivative(found.Data, configMap.Data) {
+		log.Info("Updating ConfigMap", "ConfigMap.Namespace", found.Namespace, "ConfigMap.Name", found.Name)
+		err := r.client.Update(ctx, configMap)
+		if err != nil {
+			log.Error(err, "Failed to update ConfigMap", "ConfigMap.Namespace", found.Namespace, "ConfigMap.Name", found.Name)
+			return &reconcile.Result{}, err
+		}
+		return &reconcile.Result{Requeue: true}, nil
 	}
 
 	return nil, nil
@@ -294,8 +312,8 @@ func (r *ReconcileWebproject) ensureSecret(request reconcile.Request, instance *
 			log.Error(err, "Failed to create new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
 			return &reconcile.Result{}, err
 		}
-		// Creation was successful
-		return nil, nil
+		// Creation was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
@@ -324,8 +342,8 @@ func (r *ReconcileWebproject) ensureDockerConfigSecret(request reconcile.Request
 			log.Error(err, "Failed to create new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
 			return &reconcile.Result{}, err
 		}
-		// Creation was successful
-		return nil, nil
+		// Creation was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
@@ -354,8 +372,8 @@ func (r *ReconcileWebproject) ensureAWSSecret(request reconcile.Request, instanc
 			log.Error(err, "Failed to create new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
 			return &reconcile.Result{}, err
 		}
-		// Creation was successful
-		return nil, nil
+		// Creation was successful - return and requeue
+		return &reconcile.Result{Requeue: true}, nil
 
 	} else if err != nil {
 		// Error that isn't due to the secret not existing

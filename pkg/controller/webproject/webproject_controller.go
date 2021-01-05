@@ -147,7 +147,6 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 	reqLogger.Info("Reconciling Webproject")
 
 	// Fetch the Webproject instance
-	//	instance := &wpv1.Webproject{}
 	webproject := &wpv1.WebProject{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, webproject)
 	if err != nil {
@@ -165,56 +164,67 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 
 	// ===== WEBPROJECT =====
 
+	// ensurePVC - ensure the persitentvolumeclaim for /var/lib/mysql is managed.
 	result, err = r.ensurePVC(request, webproject, r.pvcForMysql(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensurePVC - ensure the persistentvolumeclaim for web files folder is managed.
 	result, err = r.ensurePVC(request, webproject, r.pvcForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensureDeployment - ensure the webproject deployment is managed.
 	result, err = r.ensureDeployment(request, webproject, r.deploymentForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensureSerivce - ensure the k8s service is managed.
 	result, err = r.ensureService(request, webproject, r.serviceForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensureIngress - ensure the ingress object is managed.
 	result, err = r.ensureIngress(request, webproject, r.ingressForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensureEnvConfigMap - manage environmental variable config map for webproject.
 	result, err = r.ensureEnvConfigMap(request, webproject, r.envConfigMapForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensureCommonConfigMap - manage configmap used to set common environment variables for web and cli containers.
 	result, err = r.ensureCommonConfigMap(request, webproject, r.commonConfigMapForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensureInitContainerConfigMap - manage initcontainer.sh script configmap
 	result, err = r.ensureInitContainerConfigMap(request, webproject, r.initContainerConfigMapForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensureSecret - manage secrets for mysql database, etc
 	result, err = r.ensureSecret(request, webproject, r.secretForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensureAWSSecret - manage AWS secret for s3 bucket directory.
 	result, err = r.ensureAWSSecret(request, webproject, r.awsSecretForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
+	// ensureDockerConfigSecret - manage the ImagePullSecrets for webproject.
 	result, err = r.ensureDockerConfigSecret(request, webproject, r.dockerconfigSecretForWebproject(webproject))
 	if result != nil {
 		return *result, err

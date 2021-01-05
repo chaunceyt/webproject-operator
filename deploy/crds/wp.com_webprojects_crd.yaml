@@ -64,6 +64,13 @@ spec:
               type: string
             filestoragesize:
               type: string
+            ingresshosts:
+              items:
+                properties:
+                  ingresshost:
+                    type: string
+                type: object
+              type: array
             initcontainerscript:
               type: string
             projectdomainname:
@@ -75,16 +82,6 @@ spec:
             webimage:
               type: string
           required:
-          - cacheimage
-          - cacheport
-          - cliimage
-          - databaseimage
-          - databasename
-          - databaserootpassword
-          - databasestoragemountpath
-          - databasestoragesize
-          - databaseuser
-          - databaseuserpassword
           - filestoragemountpath
           - filestoragesize
           - projectdomainname
