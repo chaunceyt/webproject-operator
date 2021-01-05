@@ -1,0 +1,68 @@
+apiVersion: wp.com/v1
+kind: WebProject
+metadata:
+  name: {{ include "webproject.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "webproject.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  # Project information
+  projectname: {{ .Values.projectname }}
+  projectdomainname: {{ .Values.projectdomainname }}
+  
+  # RELEASE_NAME
+  releasename: {{ .Release.Name }}
+
+  # default web image
+  webimage: {{ .Values.webcontainer.repository }}:{{ .Values.webcontainer.tag }}
+
+  # Sidecar Containers
+
+  # cli sidecar image
+  {{- if .Values.clisidecar.enabled }} 
+  cliimage: {{ .Values.clisidecar.repository }}:{{ .Values.clisidecar.tag }}
+  {{- end }}
+
+  # database sidecar image
+  {{- if .Values.databasesidecar.enabled }}  
+  databaseimage: {{ .Values.databasesidecar.repository }}:{{ .Values.databasesidecar.tag }}
+  
+  # Database information
+  databasename: "{{ .Values.databasesidecar.dbinfo.databasename }}"
+  databaseuser: "{{ .Values.databasesidecar.dbinfo.databaseuser }}"
+  databaseuserpassword: "{{ .Values.databasesidecar.dbinfo.databaseuserpassword }}"
+  databasestoragesize: "{{ .Values.databasesidecar.dbinfo.databasestoragesize }}"
+  databasestoragemountpath: "{{ .Values.databasesidecar.dbinfo.databasestoragemountpath }}"
+  databaserootpassword: "{{ .Values.databasesidecar.dbinfo.databaserootpassword }}"
+  {{- end }}
+
+  # cache sidecar image
+  {{- if .Values.cachesidecar.enabled }} 
+  cacheimage: {{ .Values.cachesidecar.repository }}:{{ .Values.cachesidecar.tag }}
+  cacheport: {{ .Values.cachesidecar.port }}
+  {{- end }}
+
+  # file storege size and mountpath
+  filestoragesize: {{ .Values.filestoragesize }}
+  filestoragemountpath: {{ .Values.filestoragemountpath }}
+
+  # docker config information
+  dockerconfigusername: {{ .Values.dockerconfig.username }}
+  dockerconfiguserpassword: {{ .Values.dockerconfig.password }}
+  dockerconfiguseremail: {{ .Values.dockerconfig.email }}
+  dockerconfigregistryurl: {{ .Values.dockerconfig.registryurl }}
+
+  # Ingress domains (WIP)
+  ingresshosts:
+    {{- range $value := .Values.ingresshosts }}
+    - Hostname: {{ $value }}
+    {{- end }}
+
+
+  # initcontainer script
+  initcontainerscript: |-
+    #!/bin/bash
+    touch /data/date.txt
+    touch /data/env-data.txt
+    echo date > /data/data.txt
+    env > /data/env-data.txt

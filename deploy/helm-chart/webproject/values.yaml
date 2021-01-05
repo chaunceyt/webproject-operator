@@ -1,0 +1,53 @@
+# Default values for webproject.
+
+projectname: developer-cthorn
+projectdomainname: kube.domain.tld
+
+# Ingress hosts
+ingresshosts:
+  - domainone
+  - domaintwo
+  - domainthree
+
+webcontainer:
+  repository: nginx
+  pullPolicy: IfNotPresent
+  tag: "1.19.4"
+
+# Sidecars
+clisidecar:
+  enabled: true
+  repository: outrigger/cli
+  pullPolicy: IfNotPresent
+  tag: "2-php7.3"
+
+databasesidecar:
+  enabled: true
+  repository: mariadb
+  pullPolicy: IfNotPresent
+  tag: "10.5"
+  dbinfo:
+    databasename: developer_cthorn_db
+    databaseuser: admin
+    databaseuserpassword: "admin123#"
+    databasestoragesize: 5Gi
+    databasestoragemountpath: /var/lib/mysql
+    databaserootpassword: "412qwepdS"
+
+cachesidecar:
+  enabled: true
+  repository:  redis
+  pullPolicy: IfNotPresent
+  tag: "6.0.9-alpine"
+  port: 6379
+
+# file storege size and mountpath
+filestoragesize: 10Gi
+filestoragemountpath: /var/www/html/sites/default/files
+
+# docker config information
+dockerconfig:
+  username: dockeruserename
+  password: dockeruserpassword
+  email: dockerusername@domain.tld
+  registryurl: registry.domain.tld
