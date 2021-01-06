@@ -1,7 +1,8 @@
 # Default values for webproject.
 
 projectname: developer-cthorn
-projectdomainname: kube.domain.tld
+projectdomainname: developer-cthorn.kube.domain.tld
+projectmainbranch: master
 
 # Ingress hosts
 ingresshosts:
@@ -14,13 +15,17 @@ webcontainer:
   pullPolicy: IfNotPresent
   tag: "1.19.4"
 
-# Sidecars
+# Sidecars containers
+
+# CLI container for the webcontainer.
 clisidecar:
   enabled: true
   repository: outrigger/cli
   pullPolicy: IfNotPresent
   tag: "2-php7.3"
 
+# Database container for the webcontainer. Can be mysql or mariadb.
+# We recommend using a specific tag
 databasesidecar:
   enabled: true
   repository: mariadb
@@ -34,6 +39,7 @@ databasesidecar:
     databasestoragemountpath: /var/lib/mysql
     databaserootpassword: "412qwepdS"
 
+# Cache container for the webcontainer. Can be redis or memcached.
 cachesidecar:
   enabled: true
   repository:  redis
@@ -41,7 +47,7 @@ cachesidecar:
   tag: "6.0.9-alpine"
   port: 6379
 
-# file storege size and mountpath
+# File storege size and mountpath
 filestoragesize: 10Gi
 filestoragemountpath: /var/www/html/sites/default/files
 
@@ -51,3 +57,24 @@ dockerconfig:
   password: dockeruserpassword
   email: dockerusername@domain.tld
   registryurl: registry.domain.tld
+
+# Use CSI Volumes for volumesnapshots.
+# The workload created from the release-projectmainbranch will be the source
+# of the volumesnapshot
+#csivolumes:
+#   enabled: false
+#   storageclass: standard-one
+#   snapshots:
+#     database:
+#       enabled: false
+#     files:
+#       enabled: false
+
+# Project search workload.
+#search:
+#  solr:
+#    enabled: true
+#    repository:  solr
+#    pullPolicy: IfNotPresent
+#    tag: "8.0"
+#    port: 8983
