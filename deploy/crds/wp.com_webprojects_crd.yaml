@@ -31,6 +31,8 @@ spec:
         spec:
           description: WebProjectSpec defines the desired state of WebProject
           properties:
+            awssecretname:
+              type: string
             cacheimage:
               type: string
             cacheport:

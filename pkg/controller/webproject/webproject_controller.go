@@ -218,12 +218,6 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
-	// ensureAWSSecret - manage AWS secret for s3 bucket directory.
-	result, err = r.ensureAWSSecret(request, webproject, r.awsSecretForWebproject(webproject))
-	if result != nil {
-		return *result, err
-	}
-
 	// ensureDockerConfigSecret - manage the ImagePullSecrets for webproject.
 	result, err = r.ensureDockerConfigSecret(request, webproject, r.dockerconfigSecretForWebproject(webproject))
 	if result != nil {

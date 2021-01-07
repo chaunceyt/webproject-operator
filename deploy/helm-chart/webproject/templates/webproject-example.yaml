@@ -9,7 +9,12 @@ spec:
   # Project information
   projectname: {{ .Values.projectname }}
   projectdomainname: {{ .Values.projectdomainname }}
-  
+
+  # AWS secret name
+  {{- if .Values.aws.enabled }} 
+  awssecretname: {{ .Values.aws.secretname}}
+  {{- end }}
+
   # RELEASE_NAME
   releasename: {{ .Release.Name }}
 

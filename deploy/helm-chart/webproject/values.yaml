@@ -4,6 +4,11 @@ projectname: developer-cthorn
 projectdomainname: developer-cthorn.kube.domain.tld
 projectmainbranch: master
 
+# Name of secret that contains aws s3 bucket info
+aws:
+  enabled: true
+  secretname: secretname
+
 # Ingress hosts
 ingresshosts:
   - domainone
@@ -61,14 +66,19 @@ dockerconfig:
 # Use CSI Volumes for volumesnapshots.
 # The workload created from the release-projectmainbranch will be the source
 # of the volumesnapshot
+# The snapshotsource if left as default will use the workload derived from the projectmainbranch
+# otherwise it could be issue-1234-testing
+# snapshotsource: default
 #csivolumes:
 #   enabled: false
 #   storageclass: standard-one
 #   snapshots:
 #     database:
 #       enabled: false
+#       snapshotsource: default
 #     files:
 #       enabled: false
+#       snapshotsource: default
 
 # Project search workload.
 #search:

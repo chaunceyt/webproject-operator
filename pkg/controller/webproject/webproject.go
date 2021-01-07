@@ -179,29 +179,20 @@ func (r *ReconcileWebproject) secretForWebproject(cr *wpv1.WebProject) *corev1.S
 	return dep
 }
 
-// awsSecretForWebproject returns a webproject configmap object
-func (r *ReconcileWebproject) awsSecretForWebproject(cr *wpv1.WebProject) *corev1.Secret {
-
-	dep := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      workloadName(cr, "aws-secret"),
-			Namespace: cr.Namespace,
-			Labels:    labels(cr, "config"),
-		},
-		Data: map[string][]byte{
-			"AWS_ACCESS_KEY_ID":     []byte("changeme"),
-			"AWS_SECRET_ACCESS_KEY": []byte("changeme"),
-			"AWS_DEFAULT_REGION":    []byte("changeme"),
-			"AWS_BUCKET":            []byte("changeme"),
-		},
-	}
-	// Set Operator instance as the owner and controller
-	controllerutil.SetControllerReference(cr, dep, r.scheme)
-	return dep
-}
-
 // commonConfigMapForWebproject returns a webproject configmap object
 func (r *ReconcileWebproject) initContainerConfigMapForWebproject(cr *wpv1.WebProject) *corev1.ConfigMap {
+	// cr.Spec.InitContainerScript
+	configMapData := `#!/bin/bash
+	set +x;
+	#export $(cat /aws/env | xargs);
+	set -x;
+	date;
+	#aws s3 cp ${AWS_BUCKET}sites/${RELEASE_NAME}.tgz site.tgz;
+	date;
+	#tar -xzf site.tgz -C /data;
+	date;
+	#rm -rf site.tgz
+	`
 
 	dep := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -210,7 +201,7 @@ func (r *ReconcileWebproject) initContainerConfigMapForWebproject(cr *wpv1.WebPr
 			Labels:    labels(cr, "config"),
 		},
 		Data: map[string]string{
-			"init-container.sh": cr.Spec.InitContainerScript,
+			"init-container.sh": configMapData,
 		},
 	}
 	// Set Operator instance as the owner and controller
@@ -374,6 +365,13 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 					ReadOnlyRootFilesystem:   createBool(false),
 					AllowPrivilegeEscalation: createBool(false),
 				},
+				Env: []corev1.EnvVar{
+					{
+						Name:  "RELEASE_NAME",
+						Value: cr.Spec.ReleaseName,
+					},
+				},
+
 				VolumeMounts: []corev1.VolumeMount{
 					{
 						Name:      "webroot",
@@ -382,6 +380,10 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 					{
 						Name:      "files-storage",
 						MountPath: "/cmsfiles",
+					},
+					{
+						Name:      "aws-credentials",
+						MountPath: "/aws",
 					},
 					{
 						Name:      "init-container",
@@ -426,6 +428,7 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 				Name: "aws-credentials",
 				VolumeSource: corev1.VolumeSource{
 
+					//TODO: use an existing secret.
 					Secret: &corev1.SecretVolumeSource{
 						SecretName: workloadName(cr, "aws-secret"),
 					},
@@ -444,6 +447,10 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 			},
 		},
 	}
+
+	// TODO:
+	// - append the initcontainer if the awssecret is not empty.
+	// - append volume for aws secret
 
 	// append database sidecar
 	if cr.Spec.DatabaseImage != "" {
