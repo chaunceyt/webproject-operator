@@ -1,0 +1,13 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "webproject-operator.fullname" . }}
+  labels:
+    {{- include "webproject-operator.labels" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "webproject-operator.fullname" . }}
+roleRef:
+  kind: Role
+  name: webproject-operator
+  apiGroup: rbac.authorization.k8s.io
