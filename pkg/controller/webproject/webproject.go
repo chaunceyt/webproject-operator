@@ -16,6 +16,8 @@ package webproject
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -232,7 +234,7 @@ func (r *ReconcileWebproject) commonConfigMapForWebproject(cr *wpv1.WebProject) 
 	return dep
 }
 
-// serviceForWebproject returns a webproject Ingress object
+// ingressForWebproject returns a webproject Ingress object
 func (r *ReconcileWebproject) ingressForWebproject(cr *wpv1.WebProject) *networkingv1beta1.Ingress {
 
 	ingressPaths := []networkingv1beta1.HTTPIngressPath{
@@ -247,22 +249,11 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wpv1.WebProject) *network
 			},
 		},
 	}
-	domainname := webprojectDomainName(cr)
-	domain := []string{domainname}
+	subDomains := webprojectDomainNames(cr)
 	ingressSpec := networkingv1beta1.IngressSpec{
 		TLS: []networkingv1beta1.IngressTLS{
 			{
-				Hosts: domain,
-			},
-		},
-		Rules: []networkingv1beta1.IngressRule{
-			{
-				Host: domainname,
-				IngressRuleValue: networkingv1beta1.IngressRuleValue{
-					HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-						Paths: ingressPaths,
-					},
-				},
+				Hosts: subDomains,
 			},
 		},
 	}
@@ -281,9 +272,23 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wpv1.WebProject) *network
 				"kubernetes.io/ingress.class":                   "nginx",
 				"nginx.ingress.kubernetes.io/proxy-body-size":   "0",
 				"nginx.ingress.kubernetes.io/proxy-buffer-size": "16k",
+				"nginx.ingress.kubernetes.io/ssl-passthrough":   "true",
 			},
 		},
 		Spec: ingressSpec,
+	}
+
+	for _, domain := range subDomains {
+		ingress.Spec.Rules = append(
+			ingress.Spec.Rules, networkingv1beta1.IngressRule{
+				Host: domain,
+				IngressRuleValue: networkingv1beta1.IngressRuleValue{
+					HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+						Paths: ingressPaths,
+					},
+				},
+			},
+		)
 	}
 
 	// Set Operator instance as the owner and controller
@@ -354,45 +359,6 @@ func (r *ReconcileWebproject) pvcForMysql(cr *wpv1.WebProject) *corev1.Persisten
 func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 	webpod := corev1.PodSpec{
 		AutomountServiceAccountToken: createBool(false),
-		InitContainers: []corev1.Container{
-			{
-				Name:            "webdata",
-				Image:           cr.Spec.CLIImage,
-				Command:         []string{"bash", "-c", "/script/init-container.sh"},
-				ImagePullPolicy: corev1.PullIfNotPresent,
-				SecurityContext: &corev1.SecurityContext{
-					RunAsNonRoot:             createBool(false),
-					ReadOnlyRootFilesystem:   createBool(false),
-					AllowPrivilegeEscalation: createBool(false),
-				},
-				Env: []corev1.EnvVar{
-					{
-						Name:  "RELEASE_NAME",
-						Value: cr.Spec.ReleaseName,
-					},
-				},
-
-				VolumeMounts: []corev1.VolumeMount{
-					{
-						Name:      "webroot",
-						MountPath: "/data",
-					},
-					{
-						Name:      "files-storage",
-						MountPath: "/cmsfiles",
-					},
-					{
-						Name:      "aws-credentials",
-						MountPath: "/aws",
-					},
-					{
-						Name:      "init-container",
-						MountPath: "/script/init-container.sh",
-						SubPath:   "init-container.sh",
-					},
-				},
-			},
-		},
 		Containers: []corev1.Container{
 			webContainerSpec(cr),
 		},
@@ -415,36 +381,6 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 					},
 				},
 			},
-			{
-				Name: "data-storage",
-				VolumeSource: corev1.VolumeSource{
-
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: workloadName(cr, "data"),
-					},
-				},
-			},
-			{
-				Name: "aws-credentials",
-				VolumeSource: corev1.VolumeSource{
-
-					//TODO: use an existing secret.
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: workloadName(cr, "aws-secret"),
-					},
-				},
-			},
-			{
-				Name: "init-container",
-				VolumeSource: corev1.VolumeSource{
-					ConfigMap: &corev1.ConfigMapVolumeSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: workloadName(cr, "init-container"),
-						},
-						DefaultMode: createInt32(0777),
-					},
-				},
-			},
 		},
 	}
 
@@ -452,9 +388,66 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 	// - append the initcontainer if the awssecret is not empty.
 	// - append volume for aws secret
 
+	if cr.Spec.AWSSecretName != "" {
+		webpod.InitContainers = append(webpod.InitContainers, corev1.Container{
+			Name:            "webdata",
+			Image:           cr.Spec.CLIImage,
+			Command:         []string{"bash", "-c", "/script/init-container.sh"},
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			SecurityContext: &corev1.SecurityContext{
+				RunAsNonRoot:             createBool(false),
+				ReadOnlyRootFilesystem:   createBool(false),
+				AllowPrivilegeEscalation: createBool(false),
+			},
+			Env: []corev1.EnvVar{
+				{
+					Name:  "RELEASE_NAME",
+					Value: cr.Spec.ReleaseName,
+				},
+			},
+
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "webroot",
+					MountPath: "/data",
+				},
+				{
+					Name:      "files-storage",
+					MountPath: "/cmsfiles",
+				},
+				{
+					Name:      "aws-credentials",
+					MountPath: "/aws",
+				},
+				{
+					Name:      "init-container",
+					MountPath: "/script/init-container.sh",
+					SubPath:   "init-container.sh",
+				},
+			},
+		})
+		webpod.Volumes = append(webpod.Volumes, corev1.Volume{
+			Name: "aws-credentials",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: cr.Spec.AWSSecretName,
+				},
+			},
+		})
+		webpod.Volumes = append(webpod.Volumes, corev1.Volume{})
+	}
 	// append database sidecar
 	if cr.Spec.DatabaseImage != "" {
 		webpod.Containers = append(webpod.Containers, databaseContainerSpec(cr))
+		webpod.Volumes = append(webpod.Volumes, corev1.Volume{
+			Name: "data-storage",
+			VolumeSource: corev1.VolumeSource{
+
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: workloadName(cr, "data"),
+				},
+			},
+		})
 	}
 
 	// append cli sidecar
@@ -508,31 +501,8 @@ func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 					},
 				},
 			},
-			{
-				SecretRef: &corev1.SecretEnvSource{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: workloadName(cr, "aws-secret"),
-					},
-				},
-			},
 		},
 		Env: []corev1.EnvVar{
-			{
-				Name: "DB_HOST",
-				ValueFrom: &corev1.EnvVarSource{
-					FieldRef: &corev1.ObjectFieldSelector{
-						FieldPath: "status.podIP",
-					},
-				},
-			},
-			{
-				Name: "CACHE_HOST",
-				ValueFrom: &corev1.EnvVarSource{
-					FieldRef: &corev1.ObjectFieldSelector{
-						FieldPath: "status.podIP",
-					},
-				},
-			},
 			{
 				Name: "POD_NAME",
 				ValueFrom: &corev1.EnvVarSource{
@@ -581,6 +551,38 @@ func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 		},
 	}
 
+	if cr.Spec.AWSSecretName != "" {
+		container.EnvFrom = append(container.EnvFrom, corev1.EnvFromSource{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: workloadName(cr, "aws-secret"),
+				},
+			},
+		})
+	}
+
+	if cr.Spec.DatabaseImage != "" {
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name: "DB_HOST",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		})
+	}
+
+	// append cache env var.
+	if cr.Spec.CacheImage != "" {
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name: "CACHE_HOST",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		})
+	}
 	return container
 }
 
@@ -589,38 +591,6 @@ func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: "outrigger/cli:2-php7.3",
 		Name:  "cli",
-
-		Env: []corev1.EnvVar{
-			{
-				Name: "DB_HOST",
-				ValueFrom: &corev1.EnvVarSource{
-					FieldRef: &corev1.ObjectFieldSelector{
-						FieldPath: "status.podIP",
-					},
-				},
-			},
-			{
-				Name: "CACHE_HOST",
-				ValueFrom: &corev1.EnvVarSource{
-					FieldRef: &corev1.ObjectFieldSelector{
-						FieldPath: "status.podIP",
-					},
-				},
-			},
-			{
-				Name:  "MYSQL_DATABASE",
-				Value: cr.Spec.DatabaseName,
-			},
-			{
-				Name:  "MYSQL_USER",
-				Value: cr.Spec.DatabaseUser,
-			},
-			{
-				Name:  "MYSQL_PASSWORD",
-				Value: cr.Spec.DatabaseUserPassword,
-			},
-		},
-
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "webroot",
@@ -631,6 +601,42 @@ func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
 				MountPath: cr.Spec.FileStorageMountPath,
 			},
 		},
+	}
+
+	if cr.Spec.DatabaseImage != "" {
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name: "DB_HOST",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		})
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name:  "MYSQL_DATABASE",
+			Value: cr.Spec.DatabaseName,
+		})
+
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name:  "MYSQL_USER",
+			Value: cr.Spec.DatabaseUser,
+		})
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name:  "MYSQL_PASSWORD",
+			Value: cr.Spec.DatabaseUserPassword,
+		})
+	}
+
+	// append cache env var.
+	if cr.Spec.CacheImage != "" {
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name: "CACHE_HOST",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		})
 	}
 
 	return container
@@ -696,8 +702,14 @@ func workloadName(cr *wpv1.WebProject, workloadType string) string {
 	return cr.Name + "-" + workloadType
 }
 
-func webprojectDomainName(cr *wpv1.WebProject) string {
-	return cr.Spec.ReleaseName + "." + cr.Spec.ProjectDomainName
+func webprojectDomainNames(cr *wpv1.WebProject) []string {
+	subDomains := []string{}
+	domains := strings.Split(cr.Spec.IngressHosts, ",")
+	for _, domain := range domains {
+		str := fmt.Sprintf("release-%s-"+cr.Spec.ProjectDomainName, domain)
+		subDomains = append(subDomains, str)
+	}
+	return subDomains
 }
 
 // createInt32 - helper function

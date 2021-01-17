@@ -20,33 +20,29 @@ import (
 
 // WebProjectSpec defines the desired state of WebProject
 type WebProjectSpec struct {
-	AWSSecretName           string                  `json:"awssecretname,omitempty"`
-	CacheImage              string                  `json:"cacheimage,omitempty"`
-	CachePort               int32                   `json:"cacheport,omitempty"`
-	CLIImage                string                  `json:"cliimage,omitempty"`
-	DatabaseName            string                  `json:"databasename,omitempty"`
-	DatabaseImage           string                  `json:"databaseimage,omitempty"`
-	DatabaseUser            string                  `json:"databaseuser,omitempty"`
-	DatabaseStorageSize     string                  `json:"databasestoragesize,omitempty"`
-	DatabaseRootPassword    string                  `json:"databaserootpassword,omitempty"`
-	DatabaseStoreMountPath  string                  `json:"databasestoragemountpath,omitempty"`
-	DatabaseUserPassword    string                  `json:"databaseuserpassword,omitempty"`
-	DockerConfigEmail       string                  `json:"dockerconfiguseremail,omitempty"`
-	DockerConfigPassword    string                  `json:"dockerconfiguserpassword,omitempty"`
-	DockerConfigRegistryURL string                  `json:"dockerconfigregistryurl,omitempty"`
-	DockerConfigUsername    string                  `json:"dockerconfigusername,omitempty"`
-	FileStorageSize         string                  `json:"filestoragesize"`
-	FileStorageMountPath    string                  `json:"filestoragemountpath"`
-	InitContainerScript     string                  `json:"initcontainerscript,omitempty"`
-	IngressHost             []WebProjectIngressHost `json:"ingresshosts,omitempty"`
-	ProjectDomainName       string                  `json:"projectdomainname"`
-	ProjectName             string                  `json:"projectname"`
-	ReleaseName             string                  `json:"releasename"`
-	WebImage                string                  `json:"webimage"`
-}
-
-type WebProjectIngressHost struct {
-	Hostname string `json:"ingresshost,omitempty"`
+	AWSSecretName           string `json:"awssecretname,omitempty"`
+	CacheImage              string `json:"cacheimage,omitempty"`
+	CachePort               int32  `json:"cacheport,omitempty"`
+	CLIImage                string `json:"cliimage,omitempty"`
+	DatabaseName            string `json:"databasename,omitempty"`
+	DatabaseImage           string `json:"databaseimage,omitempty"`
+	DatabaseUser            string `json:"databaseuser,omitempty"`
+	DatabaseStorageSize     string `json:"databasestoragesize,omitempty"`
+	DatabaseRootPassword    string `json:"databaserootpassword,omitempty"`
+	DatabaseStoreMountPath  string `json:"databasestoragemountpath,omitempty"`
+	DatabaseUserPassword    string `json:"databaseuserpassword,omitempty"`
+	DockerConfigEmail       string `json:"dockerconfiguseremail,omitempty"`
+	DockerConfigPassword    string `json:"dockerconfiguserpassword,omitempty"`
+	DockerConfigRegistryURL string `json:"dockerconfigregistryurl,omitempty"`
+	DockerConfigUsername    string `json:"dockerconfigusername,omitempty"`
+	FileStorageSize         string `json:"filestoragesize"`
+	FileStorageMountPath    string `json:"filestoragemountpath"`
+	InitContainerScript     string `json:"initcontainerscript,omitempty"`
+	IngressHosts            string `json:"ingresshosts,omitempty"`
+	ProjectDomainName       string `json:"projectdomainname"`
+	ProjectName             string `json:"projectname"`
+	ReleaseName             string `json:"releasename"`
+	WebImage                string `json:"webimage"`
 }
 
 // WebProjectStatus defines the observed state of WebProject

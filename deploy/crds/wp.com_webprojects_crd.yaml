@@ -67,12 +67,7 @@ spec:
             filestoragesize:
               type: string
             ingresshosts:
-              items:
-                properties:
-                  ingresshost:
-                    type: string
-                type: object
-              type: array
+              type: string
             initcontainerscript:
               type: string
             projectdomainname:

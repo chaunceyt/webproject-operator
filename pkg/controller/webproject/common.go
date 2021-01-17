@@ -46,7 +46,6 @@ type DockerConfigEntry struct {
 
 func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instance *wpv1.WebProject, dep *appsv1.Deployment) (*reconcile.Result, error) {
 	found := &appsv1.Deployment{}
-	ctx := context.Background()
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
 		Name:      dep.Name,
@@ -56,7 +55,6 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 	if err != nil && errors.IsNotFound(err) {
 
 		// Create the deployment
-		log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		err = r.client.Create(context.TODO(), dep)
 
 		if err != nil {
@@ -64,6 +62,7 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 			log.Error(err, "Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 			return &reconcile.Result{}, err
 		}
+
 		// Deployment was successful
 		return nil, nil
 
@@ -75,9 +74,8 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 
 	deploy := r.deploymentForWebproject(instance)
 	// check to see if the webimage found is different that the WebProject.Spec.WebImage.
-	if !equality.Semantic.DeepDerivative(found.Spec.Template.Spec.Containers[0].Image, deploy.Spec.Template.Spec.Containers[0].Image) {
-		log.Info("Updating Deployment", "Deployment.Namespace", deploy.Namespace, "Deployment.Name", deploy.Name)
-		err := r.client.Update(ctx, deploy)
+	if !equality.Semantic.DeepDerivative(found.Spec, deploy.Spec) {
+		err := r.client.Update(context.Background(), deploy)
 		if err != nil {
 			log.Error(err, "Failed to update Deployment", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
 			return &reconcile.Result{}, err
@@ -85,7 +83,7 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 		return &reconcile.Result{Requeue: true}, nil
 
 	}
-	return nil, nil
+	return &reconcile.Result{}, nil
 
 }
 
@@ -177,7 +175,7 @@ func (r *ReconcileWebproject) ensureIngress(request reconcile.Request, instance 
 		return &reconcile.Result{}, err
 	}
 
-	return nil, nil
+	return &reconcile.Result{}, nil
 }
 
 func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
