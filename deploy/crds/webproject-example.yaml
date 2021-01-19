@@ -1,0 +1,88 @@
+---
+# Source: webproject/templates/webproject-example.yaml
+apiVersion: wp.com/v1
+kind: WebProject
+metadata:
+  name: developer-cthorn-webproject
+  labels:
+    app.kubernetes.io/name: webproject
+    app.kubernetes.io/instance: developer-cthorn
+spec:
+  # Project information
+  projectname: developer-cthorn
+  projectdomainname: developer-cthorn.kube.domain.tld
+
+  # AWS secret name
+
+  # RELEASE_NAME
+  releasename: developer-cthorn
+
+  # default web image
+  webcontainer:
+    image: nginx:1.19.4
+
+  # Sidecar Containers
+
+  # cli sidecar image
+  clisidecar:
+    enabled: false
+    image: outrigger/cli:2-php7.3
+
+  # database sidecar image
+  databasesidecar:
+    enabled: true
+    databasename: drupal_db
+    databaseimage: mysql:8.0.22
+    databaseuser: admin
+    databaseuserpassword: admin123
+    databasestoragesize: 2Gi
+    databaserootpassword: rootpasswd123
+    databasestoragemountpath: /var/lib/mysql
+
+  # cache sidecar image
+  cachesidecar:
+    enabled: false
+    image: redis
+    tag: 6.0.9-alpine
+    port: 6379 
+
+  # file storege size and mountpath
+  filestoragesize: 10Gi
+  filestoragemountpath: /var/www/html/sites/default/files
+
+  # docker config information
+  dockerconfig:
+    enabled: false
+    username: dockeruserename
+    userpassword: dockeruserpassword
+    email: dockerusername@domain.tld
+    registryurl: registry.domain.tld
+
+  # Ingress domains
+  ingresshosts:
+    - domainone
+    - domaintwo
+    - domainthree
+    - domainfour
+    - domainfive
+    - domainsix
+    - domainseven
+    - domaineight
+    - domainnine
+
+  # initcontainer script
+  initcontainerscript: |-
+    #!/bin/bash
+    # Hello cthorn
+    set +x;
+    #export $(cat /aws/env | xargs);
+    set -x;
+    date;
+    #aws s3 cp ${AWS_BUCKET}sites/${RELEASE_NAME}.tgz site.tgz;
+    date;
+    #tar -xzf site.tgz -C /data;
+    date;
+    #rm -rf site.tgz
+    # End of script 2
+    # End of script 1
+

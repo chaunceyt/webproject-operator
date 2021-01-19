@@ -33,41 +33,77 @@ spec:
           properties:
             awssecretname:
               type: string
-            cacheimage:
-              type: string
-            cacheport:
-              format: int32
-              type: integer
-            cliimage:
-              type: string
-            databaseimage:
-              type: string
-            databasename:
-              type: string
-            databaserootpassword:
-              type: string
-            databasestoragemountpath:
-              type: string
-            databasestoragesize:
-              type: string
-            databaseuser:
-              type: string
-            databaseuserpassword:
-              type: string
-            dockerconfigregistryurl:
-              type: string
-            dockerconfiguseremail:
-              type: string
-            dockerconfigusername:
-              type: string
-            dockerconfiguserpassword:
-              type: string
+            cachesidecar:
+              description: WebProjectCacheSidecar defines spec for cache sidecar
+              properties:
+                enabled:
+                  type: boolean
+                image:
+                  type: string
+                port:
+                  format: int32
+                  type: integer
+              required:
+              - enabled
+              type: object
+            clisidecar:
+              description: WebProjectCLISidecar defines spec for cache sidecar
+              properties:
+                enabled:
+                  type: boolean
+                image:
+                  type: string
+                port:
+                  format: int32
+                  type: integer
+              required:
+              - enabled
+              type: object
+            databasesidecar:
+              description: WebProjectDatabaseSidecar defines the desired state for
+                database sidecar
+              properties:
+                databaseimage:
+                  type: string
+                databasename:
+                  type: string
+                databaserootpassword:
+                  type: string
+                databasestoragemountpath:
+                  type: string
+                databasestoragesize:
+                  type: string
+                databaseuser:
+                  type: string
+                databaseuserpassword:
+                  type: string
+                enabled:
+                  type: boolean
+              type: object
+            dockerconfig:
+              description: WebProjectDockerConfig defines spec for cache sidecar
+              properties:
+                email:
+                  type: string
+                enabled:
+                  type: boolean
+                password:
+                  type: string
+                registryurl:
+                  type: string
+                username:
+                  type: string
+              required:
+              - enabled
+              type: object
             filestoragemountpath:
               type: string
             filestoragesize:
               type: string
             ingresshosts:
-              type: string
+              items:
+                type: string
+              type: array
             initcontainerscript:
               type: string
             projectdomainname:
@@ -76,15 +112,21 @@ spec:
               type: string
             releasename:
               type: string
-            webimage:
-              type: string
+            webcontainer:
+              description: WebProjectWebContainer defines to spec for webcontainer
+              properties:
+                image:
+                  type: string
+              required:
+              - image
+              type: object
           required:
           - filestoragemountpath
           - filestoragesize
           - projectdomainname
           - projectname
           - releasename
-          - webimage
+          - webcontainer
           type: object
         status:
           description: WebProjectStatus defines the observed state of WebProject

@@ -17,9 +17,9 @@ package webproject
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1"
+	"github.com/chaunceyt/webproject-operator/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -39,11 +39,16 @@ func (r *ReconcileWebproject) deploymentForWebproject(cr *wpv1.WebProject) *apps
 		"app.kubernetes.io/name": cr.Name,
 	}
 
+	annotations := map[string]string{
+		"creator": "webproject-operator.wp.com/" + version.Version,
+	}
+
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Spec.ReleaseName,
-			Namespace: cr.Namespace,
-			Labels:    labels(cr, "deployment"),
+			Name:        cr.Spec.ReleaseName,
+			Namespace:   cr.Namespace,
+			Annotations: annotations,
+			Labels:      labels(cr, "deployment"),
 		},
 
 		Spec: appsv1.DeploymentSpec{
@@ -61,8 +66,7 @@ func (r *ReconcileWebproject) deploymentForWebproject(cr *wpv1.WebProject) *apps
 		},
 	}
 
-	// If project uses private registry add ImagePullSecrets to object.
-	if cr.Spec.DockerConfigRegistryURL != "" && cr.Spec.DockerConfigUsername != "" && cr.Spec.DockerConfigPassword != "" {
+	if cr.Spec.DockerConfig.Enabled {
 		deployment.Spec.Template.Spec.ImagePullSecrets = append(
 			deployment.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
 				Name: workloadName(cr, "docker-config"),
@@ -121,8 +125,8 @@ func (r *ReconcileWebproject) envConfigMapForWebproject(cr *wpv1.WebProject) *co
 			Labels:    labels(cr, "config"),
 		},
 		Data: map[string]string{
-			"MYSQL_USER":     cr.Spec.DatabaseUser,
-			"MYSQL_DATABASE": cr.Spec.DatabaseName,
+			"MYSQL_USER":     cr.Spec.DatabaseSidecar.DatabaseUser,
+			"MYSQL_DATABASE": cr.Spec.DatabaseSidecar.DatabaseName,
 		},
 	}
 	// Set Operator instance as the owner and controller
@@ -134,10 +138,10 @@ func (r *ReconcileWebproject) envConfigMapForWebproject(cr *wpv1.WebProject) *co
 func (r *ReconcileWebproject) dockerconfigSecretForWebproject(cr *wpv1.WebProject) *corev1.Secret {
 	// create dockerconfig json object.
 	dockerEntry := DockerConfigEntry{
-		Username: cr.Spec.DockerConfigUsername,
-		Password: cr.Spec.DockerConfigPassword,
+		Username: cr.Spec.DockerConfig.Username,
+		Password: cr.Spec.DockerConfig.Password,
 	}
-	registryURL := cr.Spec.DockerConfigRegistryURL
+	registryURL := cr.Spec.DockerConfig.RegistryURL
 
 	dockerConfig := DockerConfigJson{
 		Auths: map[string]DockerConfigEntry{
@@ -173,7 +177,7 @@ func (r *ReconcileWebproject) secretForWebproject(cr *wpv1.WebProject) *corev1.S
 			Labels:    labels(cr, "config"),
 		},
 		Data: map[string][]byte{
-			"MYSQL_PASSWORD": []byte(cr.Spec.DatabaseUserPassword),
+			"MYSQL_PASSWORD": []byte(cr.Spec.DatabaseSidecar.DatabaseUserPassword),
 		},
 	}
 	// Set Operator instance as the owner and controller
@@ -183,18 +187,6 @@ func (r *ReconcileWebproject) secretForWebproject(cr *wpv1.WebProject) *corev1.S
 
 // commonConfigMapForWebproject returns a webproject configmap object
 func (r *ReconcileWebproject) initContainerConfigMapForWebproject(cr *wpv1.WebProject) *corev1.ConfigMap {
-	// cr.Spec.InitContainerScript
-	configMapData := `#!/bin/bash
-	set +x;
-	#export $(cat /aws/env | xargs);
-	set -x;
-	date;
-	#aws s3 cp ${AWS_BUCKET}sites/${RELEASE_NAME}.tgz site.tgz;
-	date;
-	#tar -xzf site.tgz -C /data;
-	date;
-	#rm -rf site.tgz
-	`
 
 	dep := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -203,7 +195,7 @@ func (r *ReconcileWebproject) initContainerConfigMapForWebproject(cr *wpv1.WebPr
 			Labels:    labels(cr, "config"),
 		},
 		Data: map[string]string{
-			"init-container.sh": configMapData,
+			"init-container.sh": cr.Spec.InitContainerScript,
 		},
 	}
 	// Set Operator instance as the owner and controller
@@ -344,7 +336,7 @@ func (r *ReconcileWebproject) pvcForMysql(cr *wpv1.WebProject) *corev1.Persisten
 
 			Resources: corev1.ResourceRequirements{
 				Requests: map[corev1.ResourceName]resource.Quantity{
-					corev1.ResourceStorage: resource.MustParse(cr.Spec.DatabaseStorageSize),
+					corev1.ResourceStorage: resource.MustParse(cr.Spec.DatabaseSidecar.DatabaseStorageSize),
 				},
 			},
 		},
@@ -391,7 +383,7 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 	if cr.Spec.AWSSecretName != "" {
 		webpod.InitContainers = append(webpod.InitContainers, corev1.Container{
 			Name:            "webdata",
-			Image:           cr.Spec.CLIImage,
+			Image:           cr.Spec.CLISidecar.Image,
 			Command:         []string{"bash", "-c", "/script/init-container.sh"},
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			SecurityContext: &corev1.SecurityContext{
@@ -437,7 +429,7 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 		webpod.Volumes = append(webpod.Volumes, corev1.Volume{})
 	}
 	// append database sidecar
-	if cr.Spec.DatabaseImage != "" {
+	if cr.Spec.DatabaseSidecar.Enabled {
 		webpod.Containers = append(webpod.Containers, databaseContainerSpec(cr))
 		webpod.Volumes = append(webpod.Volumes, corev1.Volume{
 			Name: "data-storage",
@@ -451,12 +443,12 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 	}
 
 	// append cli sidecar
-	if cr.Spec.CLIImage != "" {
+	if cr.Spec.CLISidecar.Enabled {
 		webpod.Containers = append(webpod.Containers, cliContainerSpec(cr))
 	}
 
 	// append cache sidecar
-	if cr.Spec.CacheImage != "" {
+	if cr.Spec.CacheSidecar.Enabled {
 		webpod.Containers = append(webpod.Containers, cacheContainerSpec(cr))
 	}
 
@@ -471,13 +463,14 @@ func labels(cr *wpv1.WebProject, component string) map[string]string {
 		"app.kubernetes.io/component": component,
 		"app.kubernetes.io/version":   cr.Spec.ReleaseName,
 		"release":                     cr.Spec.ReleaseName,
+		"provider":                    "webproject-operator",
 	}
 }
 
 // webContainerSpec - primary contianer for webproject
 func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 	container := corev1.Container{
-		Image: cr.Spec.WebImage,
+		Image: cr.Spec.WebContainer.Image,
 		Name:  "web",
 		EnvFrom: []corev1.EnvFromSource{
 			{
@@ -534,6 +527,23 @@ func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 			Name:          "web-port",
 		}},
 
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("200m"),
+				corev1.ResourceMemory: resource.MustParse("128Mi"),
+			},
+		},
+		ReadinessProbe: &corev1.Probe{
+			InitialDelaySeconds: 5,
+			PeriodSeconds:       2,
+			Handler: corev1.Handler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.IntOrString{
+						IntVal: 80,
+					},
+				},
+			},
+		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "webroot",
@@ -561,7 +571,7 @@ func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 		})
 	}
 
-	if cr.Spec.DatabaseImage != "" {
+	if cr.Spec.DatabaseSidecar.Enabled {
 		container.Env = append(container.Env, corev1.EnvVar{
 			Name: "DB_HOST",
 			ValueFrom: &corev1.EnvVarSource{
@@ -573,7 +583,7 @@ func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 	}
 
 	// append cache env var.
-	if cr.Spec.CacheImage != "" {
+	if cr.Spec.CacheSidecar.Enabled {
 		container.Env = append(container.Env, corev1.EnvVar{
 			Name: "CACHE_HOST",
 			ValueFrom: &corev1.EnvVarSource{
@@ -589,8 +599,14 @@ func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 // cliContainerSpec - cli sidecar
 func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
 	container := corev1.Container{
-		Image: "outrigger/cli:2-php7.3",
+		Image: cr.Spec.CLISidecar.Image,
 		Name:  "cli",
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse("128Mi"),
+			},
+		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "webroot",
@@ -601,9 +617,14 @@ func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
 				MountPath: cr.Spec.FileStorageMountPath,
 			},
 		},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: createBool(false),
+			RunAsNonRoot:             createBool(false),
+			ReadOnlyRootFilesystem:   createBool(false),
+		},
 	}
 
-	if cr.Spec.DatabaseImage != "" {
+	if cr.Spec.DatabaseSidecar.Enabled {
 		container.Env = append(container.Env, corev1.EnvVar{
 			Name: "DB_HOST",
 			ValueFrom: &corev1.EnvVarSource{
@@ -614,21 +635,21 @@ func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
 		})
 		container.Env = append(container.Env, corev1.EnvVar{
 			Name:  "MYSQL_DATABASE",
-			Value: cr.Spec.DatabaseName,
+			Value: cr.Spec.DatabaseSidecar.DatabaseName,
 		})
 
 		container.Env = append(container.Env, corev1.EnvVar{
 			Name:  "MYSQL_USER",
-			Value: cr.Spec.DatabaseUser,
+			Value: cr.Spec.DatabaseSidecar.DatabaseUser,
 		})
 		container.Env = append(container.Env, corev1.EnvVar{
 			Name:  "MYSQL_PASSWORD",
-			Value: cr.Spec.DatabaseUserPassword,
+			Value: cr.Spec.DatabaseSidecar.DatabaseUserPassword,
 		})
 	}
 
 	// append cache env var.
-	if cr.Spec.CacheImage != "" {
+	if cr.Spec.CacheSidecar.Enabled {
 		container.Env = append(container.Env, corev1.EnvVar{
 			Name: "CACHE_HOST",
 			ValueFrom: &corev1.EnvVarSource{
@@ -645,25 +666,35 @@ func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
 // databaseContainerSpec - database sidecar
 func databaseContainerSpec(cr *wpv1.WebProject) corev1.Container {
 	container := corev1.Container{
-		Image: cr.Spec.DatabaseImage,
-		Name:  "database",
+		Image: cr.Spec.DatabaseSidecar.DatabaseImage,
+		Resources: corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse("128Mi"),
+			},
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse("128Mi"),
+			},
+		},
+		Name: "database",
 
 		Env: []corev1.EnvVar{
 			{
 				Name:  "MYSQL_ROOT_PASSWORD",
-				Value: cr.Spec.DatabaseRootPassword,
+				Value: cr.Spec.DatabaseSidecar.DatabaseRootPassword,
 			},
 			{
 				Name:  "MYSQL_DATABASE",
-				Value: cr.Spec.DatabaseName,
+				Value: cr.Spec.DatabaseSidecar.DatabaseName,
 			},
 			{
 				Name:  "MYSQL_USER",
-				Value: cr.Spec.DatabaseUser,
+				Value: cr.Spec.DatabaseSidecar.DatabaseUser,
 			},
 			{
 				Name:  "MYSQL_PASSWORD",
-				Value: cr.Spec.DatabaseUserPassword,
+				Value: cr.Spec.DatabaseSidecar.DatabaseUserPassword,
 			},
 		},
 
@@ -674,8 +705,13 @@ func databaseContainerSpec(cr *wpv1.WebProject) corev1.Container {
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "data-storage",
-				MountPath: cr.Spec.DatabaseStoreMountPath,
+				MountPath: cr.Spec.DatabaseSidecar.DatabaseStoreMountPath,
 			},
+		},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: createBool(false),
+			RunAsNonRoot:             createBool(false),
+			ReadOnlyRootFilesystem:   createBool(false),
 		},
 	}
 
@@ -685,13 +721,15 @@ func databaseContainerSpec(cr *wpv1.WebProject) corev1.Container {
 // cacheContainerSpec - cache sidecar (memcached or redis)
 func cacheContainerSpec(cr *wpv1.WebProject) corev1.Container {
 	container := corev1.Container{
-		Image: cr.Spec.CacheImage,
+		Image: cr.Spec.CacheSidecar.Image,
 		Name:  "cache",
-
 		Ports: []corev1.ContainerPort{{
-			ContainerPort: int32(cr.Spec.CachePort),
+			ContainerPort: int32(cr.Spec.CacheSidecar.Port),
 			Name:          "cache-port",
 		}},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: createBool(false),
+		},
 	}
 
 	return container
@@ -704,7 +742,8 @@ func workloadName(cr *wpv1.WebProject, workloadType string) string {
 
 func webprojectDomainNames(cr *wpv1.WebProject) []string {
 	subDomains := []string{}
-	domains := strings.Split(cr.Spec.IngressHosts, ",")
+	domains := cr.Spec.IngressHosts
+	//domains := strings.Split(cr.Spec.IngressHosts, ",")
 	for _, domain := range domains {
 		str := fmt.Sprintf("release-%s-"+cr.Spec.ProjectDomainName, domain)
 		subDomains = append(subDomains, str)
@@ -719,4 +758,8 @@ func createInt32(x int32) *int32 {
 
 func createBool(x bool) *bool {
 	return &x
+}
+
+func createInt64(i int64) *int64 {
+	return &i
 }

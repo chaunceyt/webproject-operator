@@ -23,6 +23,7 @@ import (
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -143,6 +144,8 @@ type ReconcileWebproject struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	// reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	// reqLogger.Info("Reconciling WebProject")
 
 	// Fetch the Webproject instance
 	webproject := &wpv1.WebProject{}
@@ -164,7 +167,7 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 
 	// ensurePVC - ensure the persitentvolumeclaim for /var/lib/mysql is managed.
 	// if the database name is empty do not manage mysql PVC
-	if webproject.Spec.DatabaseName != "" {
+	if webproject.Spec.DatabaseSidecar.Enabled {
 		result, err = r.ensurePVC(request, webproject, r.pvcForMysql(webproject))
 		if result != nil {
 			return *result, err
@@ -178,6 +181,12 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
+	// ensureIngress - ensure the ingress object is managed.
+	result, err = r.ensureIngress(request, webproject, r.ingressForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
 	// ensureDeployment - ensure the webproject deployment is managed.
 	result, err = r.ensureDeployment(request, webproject, r.deploymentForWebproject(webproject))
 	if result != nil {
@@ -186,12 +195,6 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 
 	// ensureSerivce - ensure the k8s service is managed.
 	result, err = r.ensureService(request, webproject, r.serviceForWebproject(webproject))
-	if result != nil {
-		return *result, err
-	}
-
-	// ensureIngress - ensure the ingress object is managed.
-	result, err = r.ensureIngress(request, webproject, r.ingressForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
@@ -227,4 +230,21 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileWebproject) doesIngressExists(wp *wpv1.WebProject) bool {
+	ingress := &networkingv1beta1.Ingress{}
+	log.Info("Does Ingress exists")
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      workloadName(wp, "ingress"),
+		Namespace: wp.Namespace,
+	}, ingress)
+
+	if err != nil {
+		log.Error(err, "Ingress not found")
+		return false
+	}
+	return true
+
 }

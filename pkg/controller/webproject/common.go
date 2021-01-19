@@ -16,6 +16,7 @@ package webproject
 
 import (
 	"context"
+	"reflect"
 
 	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -73,8 +74,7 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 	}
 
 	deploy := r.deploymentForWebproject(instance)
-	// check to see if the webimage found is different that the WebProject.Spec.WebImage.
-	if !equality.Semantic.DeepDerivative(found.Spec, deploy.Spec) {
+	if !reflect.DeepEqual(found.Spec.Template.Spec, deploy.Spec.Template.Spec) {
 		err := r.client.Update(context.Background(), deploy)
 		if err != nil {
 			log.Error(err, "Failed to update Deployment", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
@@ -83,7 +83,7 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 		return &reconcile.Result{Requeue: true}, nil
 
 	}
-	return &reconcile.Result{}, nil
+	return nil, nil
 
 }
 
@@ -175,7 +175,18 @@ func (r *ReconcileWebproject) ensureIngress(request reconcile.Request, instance 
 		return &reconcile.Result{}, err
 	}
 
-	return &reconcile.Result{}, nil
+	ingress := r.ingressForWebproject(instance)
+
+	if !reflect.DeepEqual(found.Spec.Rules, ingress.Spec.Rules) {
+		err := r.client.Update(context.Background(), ingress)
+		if err != nil {
+			log.Error(err, "Failed to update Deployment", "Ingress.Namespace", found.Namespace, "Ingress.Name", found.Name)
+			return &reconcile.Result{}, err
+		}
+		return &reconcile.Result{Requeue: true}, nil
+
+	}
+	return nil, nil
 }
 
 func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
@@ -210,7 +221,6 @@ func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, inst
 
 func (r *ReconcileWebproject) ensureInitContainerConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
 	found := &corev1.ConfigMap{}
-	ctx := context.Background()
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
 		Name:      cm.Name,
@@ -237,9 +247,9 @@ func (r *ReconcileWebproject) ensureInitContainerConfigMap(request reconcile.Req
 	}
 
 	configMap := r.initContainerConfigMapForWebproject(instance)
-	if !equality.Semantic.DeepDerivative(found.Data, configMap.Data) {
+	if !reflect.DeepEqual(found.Data, configMap.Data) {
 		log.Info("Updating ConfigMap", "ConfigMap.Namespace", found.Namespace, "ConfigMap.Name", found.Name)
-		err := r.client.Update(ctx, configMap)
+		err := r.client.Update(context.Background(), configMap)
 		if err != nil {
 			log.Error(err, "Failed to update ConfigMap", "ConfigMap.Namespace", found.Namespace, "ConfigMap.Name", found.Name)
 			return &reconcile.Result{}, err

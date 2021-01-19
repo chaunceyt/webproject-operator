@@ -20,29 +20,59 @@ import (
 
 // WebProjectSpec defines the desired state of WebProject
 type WebProjectSpec struct {
-	AWSSecretName           string `json:"awssecretname,omitempty"`
-	CacheImage              string `json:"cacheimage,omitempty"`
-	CachePort               int32  `json:"cacheport,omitempty"`
-	CLIImage                string `json:"cliimage,omitempty"`
-	DatabaseName            string `json:"databasename,omitempty"`
-	DatabaseImage           string `json:"databaseimage,omitempty"`
-	DatabaseUser            string `json:"databaseuser,omitempty"`
-	DatabaseStorageSize     string `json:"databasestoragesize,omitempty"`
-	DatabaseRootPassword    string `json:"databaserootpassword,omitempty"`
-	DatabaseStoreMountPath  string `json:"databasestoragemountpath,omitempty"`
-	DatabaseUserPassword    string `json:"databaseuserpassword,omitempty"`
-	DockerConfigEmail       string `json:"dockerconfiguseremail,omitempty"`
-	DockerConfigPassword    string `json:"dockerconfiguserpassword,omitempty"`
-	DockerConfigRegistryURL string `json:"dockerconfigregistryurl,omitempty"`
-	DockerConfigUsername    string `json:"dockerconfigusername,omitempty"`
-	FileStorageSize         string `json:"filestoragesize"`
-	FileStorageMountPath    string `json:"filestoragemountpath"`
-	InitContainerScript     string `json:"initcontainerscript,omitempty"`
-	IngressHosts            string `json:"ingresshosts,omitempty"`
-	ProjectDomainName       string `json:"projectdomainname"`
-	ProjectName             string `json:"projectname"`
-	ReleaseName             string `json:"releasename"`
-	WebImage                string `json:"webimage"`
+	AWSSecretName        string                    `json:"awssecretname,omitempty"`
+	CLISidecar           WebProjectCLISidecar      `json:"clisidecar,omitempty"`
+	CacheSidecar         WebProjectCacheSidecar    `json:"cachesidecar,omitempty"`
+	DatabaseSidecar      WebProjectDatabaseSidecar `json:"databasesidecar,omitempty"`
+	DockerConfig         WebProjectDockerConfig    `json:"dockerconfig,omitempty"`
+	FileStorageSize      string                    `json:"filestoragesize"`
+	FileStorageMountPath string                    `json:"filestoragemountpath"`
+	InitContainerScript  string                    `json:"initcontainerscript,omitempty"`
+	IngressHosts         []string                  `json:"ingresshosts,omitempty"`
+	ProjectDomainName    string                    `json:"projectdomainname"`
+	ProjectName          string                    `json:"projectname"`
+	ReleaseName          string                    `json:"releasename"`
+	WebContainer         WebProjectWebContainer    `json:"webcontainer"`
+}
+
+// WebProjectWebContainer defines to spec for webcontainer
+type WebProjectWebContainer struct {
+	Image string `json:"image"`
+}
+
+// WebProjectDockerConfig defines spec for cache sidecar
+type WebProjectDockerConfig struct {
+	Enabled     bool   `json:"enabled"`
+	Email       string `json:"email,omitempty"`
+	Password    string `json:"password,omitempty"`
+	RegistryURL string `json:"registryurl,omitempty"`
+	Username    string `json:"username,omitempty"`
+}
+
+// WebProjectCacheSidecar defines spec for cache sidecar
+type WebProjectCacheSidecar struct {
+	Enabled bool   `json:"enabled"`
+	Image   string `json:"image,omitempty"`
+	Port    int32  `json:"port,omitempty"`
+}
+
+// WebProjectCLISidecar defines spec for cache sidecar
+type WebProjectCLISidecar struct {
+	Enabled bool   `json:"enabled"`
+	Image   string `json:"image,omitempty"`
+	Port    int32  `json:"port,omitempty"`
+}
+
+// WebProjectDatabaseSidecar defines the desired state for database sidecar
+type WebProjectDatabaseSidecar struct {
+	Enabled                bool   `json:"enabled,omitempty"`
+	DatabaseName           string `json:"databasename,omitempty"`
+	DatabaseImage          string `json:"databaseimage,omitempty"`
+	DatabaseUser           string `json:"databaseuser,omitempty"`
+	DatabaseStorageSize    string `json:"databasestoragesize,omitempty"`
+	DatabaseRootPassword   string `json:"databaserootpassword,omitempty"`
+	DatabaseStoreMountPath string `json:"databasestoragemountpath,omitempty"`
+	DatabaseUserPassword   string `json:"databaseuserpassword,omitempty"`
 }
 
 // WebProjectStatus defines the observed state of WebProject
