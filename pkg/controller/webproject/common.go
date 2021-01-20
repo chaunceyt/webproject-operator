@@ -22,7 +22,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -289,7 +288,7 @@ func (r *ReconcileWebproject) ensureCommonConfigMap(request reconcile.Request, i
 	}
 
 	configMap := r.commonConfigMapForWebproject(instance)
-	if !equality.Semantic.DeepDerivative(found.Data, configMap.Data) {
+	if !reflect.DeepEqual(found.Data, configMap.Data) {
 		log.Info("Updating ConfigMap", "ConfigMap.Namespace", found.Namespace, "ConfigMap.Name", found.Name)
 		err := r.client.Update(ctx, configMap)
 		if err != nil {

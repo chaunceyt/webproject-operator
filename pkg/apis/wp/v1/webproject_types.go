@@ -33,6 +33,7 @@ type WebProjectSpec struct {
 	ProjectName          string                    `json:"projectname"`
 	ReleaseName          string                    `json:"releasename"`
 	WebContainer         WebProjectWebContainer    `json:"webcontainer"`
+	CommonConfig         map[string]string         `json:"commonconfig"`
 }
 
 // WebProjectWebContainer defines to spec for webcontainer

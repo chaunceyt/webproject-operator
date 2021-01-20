@@ -59,6 +59,10 @@ spec:
               required:
               - enabled
               type: object
+            commonconfig:
+              additionalProperties:
+                type: string
+              type: object
             databasesidecar:
               description: WebProjectDatabaseSidecar defines the desired state for
                 database sidecar
@@ -121,6 +125,7 @@ spec:
               - image
               type: object
           required:
+          - commonconfig
           - filestoragemountpath
           - filestoragesize
           - projectdomainname

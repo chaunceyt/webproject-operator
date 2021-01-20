@@ -1,5 +1,5 @@
 ---
-# Source: webproject/templates/webproject-example.yaml
+# 
 apiVersion: wp.com/v1
 kind: WebProject
 metadata:
@@ -83,6 +83,15 @@ spec:
     #tar -xzf site.tgz -C /data;
     date;
     #rm -rf site.tgz
-    # End of script 2
-    # End of script 1
 
+  # common configmap
+  # required
+  commonconfig:
+   "BUILD_ID": "1234567890"
+   "DOCROOT": "/var/www/docroot"
+   "PROJECT_ENV": "project"
+   "CI": "true"
+   "PHP_MAX_EXECUTION_TIME": "30"
+   "DBNAME": "databasename"
+   "DBUSER": "databaseuser"
+   "PHP_MEMORY_LIMIT": "512M"

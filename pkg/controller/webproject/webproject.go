@@ -212,14 +212,7 @@ func (r *ReconcileWebproject) commonConfigMapForWebproject(cr *wpv1.WebProject) 
 			Namespace: cr.Namespace,
 			Labels:    labels(cr, "config"),
 		},
-		Data: map[string]string{
-			"BUILD_ID":               "changeme",
-			"DOCROOT":                "changeme",
-			"PROJECT_ENV":            "changeme",
-			"CI":                     "true",
-			"PHP_MAX_EXECUTION_TIME": "changeme",
-			"PHP_MEMORY_LIMIT":       "changeme",
-		},
+		Data: cr.Spec.CommonConfig,
 	}
 	// Set Operator instance as the owner and controller
 	controllerutil.SetControllerReference(cr, dep, r.scheme)
