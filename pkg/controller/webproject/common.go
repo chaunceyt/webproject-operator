@@ -18,7 +18,7 @@ import (
 	"context"
 	"reflect"
 
-	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
+	wp "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -44,7 +44,7 @@ type DockerConfigEntry struct {
 	Email    string
 }
 
-func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instance *wpv1.WebProject, dep *appsv1.Deployment) (*reconcile.Result, error) {
+func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instance *wp.WebProject, dep *appsv1.Deployment) (*reconcile.Result, error) {
 	found := &appsv1.Deployment{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
@@ -86,7 +86,7 @@ func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instan
 
 }
 
-func (r *ReconcileWebproject) ensureService(request reconcile.Request, instance *wpv1.WebProject, s *corev1.Service) (*reconcile.Result, error) {
+func (r *ReconcileWebproject) ensureService(request reconcile.Request, instance *wp.WebProject, s *corev1.Service) (*reconcile.Result, error) {
 	found := &corev1.Service{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
@@ -116,7 +116,7 @@ func (r *ReconcileWebproject) ensureService(request reconcile.Request, instance 
 	return nil, nil
 }
 
-func (r *ReconcileWebproject) ensurePVC(request reconcile.Request, instance *wpv1.WebProject, s *corev1.PersistentVolumeClaim) (*reconcile.Result, error) {
+func (r *ReconcileWebproject) ensurePVC(request reconcile.Request, instance *wp.WebProject, s *corev1.PersistentVolumeClaim) (*reconcile.Result, error) {
 	found := &corev1.PersistentVolumeClaim{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
@@ -147,7 +147,7 @@ func (r *ReconcileWebproject) ensurePVC(request reconcile.Request, instance *wpv
 
 }
 
-func (r *ReconcileWebproject) ensureIngress(request reconcile.Request, instance *wpv1.WebProject, ing *networkingv1beta1.Ingress) (*reconcile.Result, error) {
+func (r *ReconcileWebproject) ensureIngress(request reconcile.Request, instance *wp.WebProject, ing *networkingv1beta1.Ingress) (*reconcile.Result, error) {
 	found := &networkingv1beta1.Ingress{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
@@ -188,7 +188,7 @@ func (r *ReconcileWebproject) ensureIngress(request reconcile.Request, instance 
 	return nil, nil
 }
 
-func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
+func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, instance *wp.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
 	found := &corev1.ConfigMap{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
@@ -218,7 +218,7 @@ func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, inst
 	return nil, nil
 }
 
-func (r *ReconcileWebproject) ensureInitContainerConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
+func (r *ReconcileWebproject) ensureInitContainerConfigMap(request reconcile.Request, instance *wp.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
 	found := &corev1.ConfigMap{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
@@ -259,7 +259,7 @@ func (r *ReconcileWebproject) ensureInitContainerConfigMap(request reconcile.Req
 	return nil, nil
 }
 
-func (r *ReconcileWebproject) ensureCommonConfigMap(request reconcile.Request, instance *wpv1.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
+func (r *ReconcileWebproject) ensureCommonConfigMap(request reconcile.Request, instance *wp.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
 	found := &corev1.ConfigMap{}
 	ctx := context.Background()
 
@@ -301,7 +301,7 @@ func (r *ReconcileWebproject) ensureCommonConfigMap(request reconcile.Request, i
 	return nil, nil
 }
 
-func (r *ReconcileWebproject) ensureSecret(request reconcile.Request, instance *wpv1.WebProject, secret *corev1.Secret) (*reconcile.Result, error) {
+func (r *ReconcileWebproject) ensureSecret(request reconcile.Request, instance *wp.WebProject, secret *corev1.Secret) (*reconcile.Result, error) {
 	found := &corev1.Secret{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{
@@ -331,7 +331,7 @@ func (r *ReconcileWebproject) ensureSecret(request reconcile.Request, instance *
 	return nil, nil
 }
 
-func (r *ReconcileWebproject) ensureDockerConfigSecret(request reconcile.Request, instance *wpv1.WebProject, secret *corev1.Secret) (*reconcile.Result, error) {
+func (r *ReconcileWebproject) ensureDockerConfigSecret(request reconcile.Request, instance *wp.WebProject, secret *corev1.Secret) (*reconcile.Result, error) {
 	found := &corev1.Secret{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{

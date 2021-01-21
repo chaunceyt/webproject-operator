@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
+	wp "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
 	"github.com/chaunceyt/webproject-operator/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -34,7 +34,7 @@ const (
 	Int intstr.Type = iota
 )
 
-func (r *ReconcileWebproject) deploymentForWebproject(cr *wpv1.WebProject) *appsv1.Deployment {
+func (r *ReconcileWebproject) deploymentForWebproject(cr *wp.WebProject) *appsv1.Deployment {
 	matchlabels := map[string]string{
 		"app.kubernetes.io/name": cr.Name,
 	}
@@ -79,7 +79,7 @@ func (r *ReconcileWebproject) deploymentForWebproject(cr *wpv1.WebProject) *apps
 
 }
 
-func (r *ReconcileWebproject) serviceForWebproject(cr *wpv1.WebProject) *corev1.Service {
+func (r *ReconcileWebproject) serviceForWebproject(cr *wp.WebProject) *corev1.Service {
 	matchlabels := map[string]string{
 		"app.kubernetes.io/name": cr.Name,
 	}
@@ -116,7 +116,7 @@ func (r *ReconcileWebproject) serviceForWebproject(cr *wpv1.WebProject) *corev1.
 }
 
 // configMapForWebproject returns a webproject configmap object
-func (r *ReconcileWebproject) envConfigMapForWebproject(cr *wpv1.WebProject) *corev1.ConfigMap {
+func (r *ReconcileWebproject) envConfigMapForWebproject(cr *wp.WebProject) *corev1.ConfigMap {
 
 	dep := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -135,7 +135,7 @@ func (r *ReconcileWebproject) envConfigMapForWebproject(cr *wpv1.WebProject) *co
 }
 
 // secretForWebproject returns a webproject configmap object
-func (r *ReconcileWebproject) dockerconfigSecretForWebproject(cr *wpv1.WebProject) *corev1.Secret {
+func (r *ReconcileWebproject) dockerconfigSecretForWebproject(cr *wp.WebProject) *corev1.Secret {
 	// create dockerconfig json object.
 	dockerEntry := DockerConfigEntry{
 		Username: cr.Spec.DockerConfig.Username,
@@ -168,7 +168,7 @@ func (r *ReconcileWebproject) dockerconfigSecretForWebproject(cr *wpv1.WebProjec
 }
 
 // secretForWebproject returns a webproject configmap object
-func (r *ReconcileWebproject) secretForWebproject(cr *wpv1.WebProject) *corev1.Secret {
+func (r *ReconcileWebproject) secretForWebproject(cr *wp.WebProject) *corev1.Secret {
 
 	dep := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -186,7 +186,7 @@ func (r *ReconcileWebproject) secretForWebproject(cr *wpv1.WebProject) *corev1.S
 }
 
 // commonConfigMapForWebproject returns a webproject configmap object
-func (r *ReconcileWebproject) initContainerConfigMapForWebproject(cr *wpv1.WebProject) *corev1.ConfigMap {
+func (r *ReconcileWebproject) initContainerConfigMapForWebproject(cr *wp.WebProject) *corev1.ConfigMap {
 
 	dep := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -204,7 +204,7 @@ func (r *ReconcileWebproject) initContainerConfigMapForWebproject(cr *wpv1.WebPr
 }
 
 // commonConfigMapForWebproject returns a webproject configmap object
-func (r *ReconcileWebproject) commonConfigMapForWebproject(cr *wpv1.WebProject) *corev1.ConfigMap {
+func (r *ReconcileWebproject) commonConfigMapForWebproject(cr *wp.WebProject) *corev1.ConfigMap {
 
 	dep := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -220,7 +220,7 @@ func (r *ReconcileWebproject) commonConfigMapForWebproject(cr *wpv1.WebProject) 
 }
 
 // ingressForWebproject returns a webproject Ingress object
-func (r *ReconcileWebproject) ingressForWebproject(cr *wpv1.WebProject) *networkingv1beta1.Ingress {
+func (r *ReconcileWebproject) ingressForWebproject(cr *wp.WebProject) *networkingv1beta1.Ingress {
 
 	ingressPaths := []networkingv1beta1.HTTPIngressPath{
 		networkingv1beta1.HTTPIngressPath{
@@ -282,7 +282,7 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wpv1.WebProject) *network
 }
 
 // pvcForWebproject - persistent volume claim for static files.
-func (r *ReconcileWebproject) pvcForWebproject(cr *wpv1.WebProject) *corev1.PersistentVolumeClaim {
+func (r *ReconcileWebproject) pvcForWebproject(cr *wp.WebProject) *corev1.PersistentVolumeClaim {
 	pvc := &corev1.PersistentVolumeClaim{
 
 		ObjectMeta: metav1.ObjectMeta{
@@ -312,7 +312,7 @@ func (r *ReconcileWebproject) pvcForWebproject(cr *wpv1.WebProject) *corev1.Pers
 
 // pvcForMysql - persistent volume claim for mysql|mariadb data path /var/lib/mysql
 // TODO: add support to create VolumeSnapshot from current pvc and use that PVC for webproject
-func (r *ReconcileWebproject) pvcForMysql(cr *wpv1.WebProject) *corev1.PersistentVolumeClaim {
+func (r *ReconcileWebproject) pvcForMysql(cr *wp.WebProject) *corev1.PersistentVolumeClaim {
 	pvc := &corev1.PersistentVolumeClaim{
 
 		ObjectMeta: metav1.ObjectMeta{
@@ -341,7 +341,7 @@ func (r *ReconcileWebproject) pvcForMysql(cr *wpv1.WebProject) *corev1.Persisten
 }
 
 // webProjectPodSpect - pod for webproject with multiple sidecars.
-func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
+func webProjectPodSpec(cr *wp.WebProject) corev1.PodSpec {
 	webpod := corev1.PodSpec{
 		AutomountServiceAccountToken: createBool(false),
 		Containers: []corev1.Container{
@@ -449,7 +449,7 @@ func webProjectPodSpec(cr *wpv1.WebProject) corev1.PodSpec {
 }
 
 // labels - labels used on all objects.
-func labels(cr *wpv1.WebProject, component string) map[string]string {
+func labels(cr *wp.WebProject, component string) map[string]string {
 	return map[string]string{
 		"app.kubernetes.io/name":      cr.Name,
 		"app.kubernetes.io/part-of":   cr.Spec.ReleaseName,
@@ -461,7 +461,7 @@ func labels(cr *wpv1.WebProject, component string) map[string]string {
 }
 
 // webContainerSpec - primary contianer for webproject
-func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
+func webContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.WebContainer.Image,
 		Name:  "web",
@@ -590,7 +590,7 @@ func webContainerSpec(cr *wpv1.WebProject) corev1.Container {
 }
 
 // cliContainerSpec - cli sidecar
-func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
+func cliContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.CLISidecar.Image,
 		Name:  "cli",
@@ -657,7 +657,7 @@ func cliContainerSpec(cr *wpv1.WebProject) corev1.Container {
 }
 
 // databaseContainerSpec - database sidecar
-func databaseContainerSpec(cr *wpv1.WebProject) corev1.Container {
+func databaseContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.DatabaseSidecar.DatabaseImage,
 		Resources: corev1.ResourceRequirements{
@@ -712,7 +712,7 @@ func databaseContainerSpec(cr *wpv1.WebProject) corev1.Container {
 }
 
 // cacheContainerSpec - cache sidecar (memcached or redis)
-func cacheContainerSpec(cr *wpv1.WebProject) corev1.Container {
+func cacheContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.CacheSidecar.Image,
 		Name:  "cache",
@@ -729,11 +729,11 @@ func cacheContainerSpec(cr *wpv1.WebProject) corev1.Container {
 }
 
 // workloadName
-func workloadName(cr *wpv1.WebProject, workloadType string) string {
+func workloadName(cr *wp.WebProject, workloadType string) string {
 	return cr.Name + "-" + workloadType
 }
 
-func webprojectDomainNames(cr *wpv1.WebProject) []string {
+func webprojectDomainNames(cr *wp.WebProject) []string {
 	subDomains := []string{}
 	domains := cr.Spec.IngressHosts
 	//domains := strings.Split(cr.Spec.IngressHosts, ",")

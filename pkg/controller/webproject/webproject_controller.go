@@ -17,7 +17,7 @@ package webproject
 import (
 	"context"
 
-	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
+	wp "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -60,7 +60,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource Webproject
-	err = c.Watch(&source.Kind{Type: &wpv1.WebProject{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &wp.WebProject{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &wpv1.WebProject{},
+		OwnerType:    &wp.WebProject{},
 	})
 
 	if err != nil {
@@ -79,7 +79,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &wpv1.WebProject{},
+		OwnerType:    &wp.WebProject{},
 	})
 
 	if err != nil {
@@ -88,7 +88,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &wpv1.WebProject{},
+		OwnerType:    &wp.WebProject{},
 	})
 
 	if err != nil {
@@ -97,7 +97,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	err = c.Watch(&source.Kind{Type: &networkingv1beta1.Ingress{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &wpv1.WebProject{},
+		OwnerType:    &wp.WebProject{},
 	})
 
 	if err != nil {
@@ -106,7 +106,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &wpv1.WebProject{},
+		OwnerType:    &wp.WebProject{},
 	})
 
 	if err != nil {
@@ -115,7 +115,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	err = c.Watch(&source.Kind{Type: &corev1.PersistentVolumeClaim{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &wpv1.WebProject{},
+		OwnerType:    &wp.WebProject{},
 	})
 
 	if err != nil {
@@ -148,7 +148,7 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 	// reqLogger.Info("Reconciling WebProject")
 
 	// Fetch the Webproject instance
-	webproject := &wpv1.WebProject{}
+	webproject := &wp.WebProject{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, webproject)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -232,7 +232,7 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileWebproject) doesIngressExists(wp *wpv1.WebProject) bool {
+func (r *ReconcileWebproject) doesIngressExists(wp *wp.WebProject) bool {
 	ingress := &networkingv1beta1.Ingress{}
 	log.Info("Does Ingress exists")
 
