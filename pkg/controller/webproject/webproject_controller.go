@@ -17,7 +17,7 @@ package webproject
 import (
 	"context"
 
-	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1"
+	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"

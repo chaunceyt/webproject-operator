@@ -1,6 +1,5 @@
 ---
-# 
-apiVersion: wp.com/v1
+apiVersion: wp.webproject-operator.io/v1alpha1
 kind: WebProject
 metadata:
   name: developer-cthorn-webproject
@@ -25,7 +24,7 @@ spec:
 
   # cli sidecar image
   clisidecar:
-    enabled: false
+    enabled: true
     image: outrigger/cli:2-php7.3
 
   # database sidecar image
@@ -41,7 +40,7 @@ spec:
 
   # cache sidecar image
   cachesidecar:
-    enabled: false
+    enabled: true
     image: redis
     tag: 6.0.9-alpine
     port: 6379 
@@ -69,6 +68,7 @@ spec:
     - domainseven
     - domaineight
     - domainnine
+    - domainten
 
   # initcontainer script
   initcontainerscript: |-

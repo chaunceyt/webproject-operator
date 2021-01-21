@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1"
+	wpv1 "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
 	"github.com/chaunceyt/webproject-operator/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
