@@ -51,11 +51,8 @@ spec:
 
   # docker config information
   dockerconfig:
-    enabled: false
-    username: dockeruserename
-    userpassword: dockeruserpassword
-    email: dockerusername@domain.tld
-    registryurl: registry.domain.tld
+    enabled: true
+    secretname: dockersecret
 
   # Ingress domains
   ingresshosts:

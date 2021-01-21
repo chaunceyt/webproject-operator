@@ -27,23 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// create docker config for workload.
-
-// DockerConfigJson represents ~/.docker/config.json file info.
-type DockerConfigJson struct {
-	Auths DockerConfig `json:"auths"`
-}
-
-// DockerConfig represents the config file used by the docker CLI.
-type DockerConfig map[string]DockerConfigEntry
-
-// DockerConfigEntry represents an Auth entry in the dockerconfigjson.
-type DockerConfigEntry struct {
-	Username string
-	Password string
-	Email    string
-}
-
 func (r *ReconcileWebproject) ensureDeployment(request reconcile.Request, instance *wp.WebProject, dep *appsv1.Deployment) (*reconcile.Result, error) {
 	found := &appsv1.Deployment{}
 
@@ -320,36 +303,6 @@ func (r *ReconcileWebproject) ensureSecret(request reconcile.Request, instance *
 			return &reconcile.Result{}, err
 		}
 		// Creation was successful - return and requeue
-		return nil, nil
-
-	} else if err != nil {
-		// Error that isn't due to the secret not existing
-		log.Error(err, "Failed to get Secret")
-		return &reconcile.Result{}, err
-	}
-
-	return nil, nil
-}
-
-func (r *ReconcileWebproject) ensureDockerConfigSecret(request reconcile.Request, instance *wp.WebProject, secret *corev1.Secret) (*reconcile.Result, error) {
-	found := &corev1.Secret{}
-
-	err := r.client.Get(context.TODO(), types.NamespacedName{
-		Name:      secret.Name,
-		Namespace: instance.Namespace,
-	}, found)
-	if err != nil && errors.IsNotFound(err) {
-
-		// Create the secret
-		log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
-		err = r.client.Create(context.TODO(), secret)
-
-		if err != nil {
-			// Creation failed
-			log.Error(err, "Failed to create new Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
-			return &reconcile.Result{}, err
-		}
-		// Creation was successful
 		return nil, nil
 
 	} else if err != nil {

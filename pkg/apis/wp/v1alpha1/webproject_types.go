@@ -41,13 +41,10 @@ type WebProjectWebContainer struct {
 	Image string `json:"image"`
 }
 
-// WebProjectDockerConfig defines spec for cache sidecar
+// WebProjectDockerConfig defines setup ImagePullSecret for private registry.
 type WebProjectDockerConfig struct {
-	Enabled     bool   `json:"enabled"`
-	Email       string `json:"email,omitempty"`
-	Password    string `json:"password,omitempty"`
-	RegistryURL string `json:"registryurl,omitempty"`
-	Username    string `json:"username,omitempty"`
+	Enabled    bool   `json:"enabled"`
+	Secretname string `json:"secretname,omitempty"`
 }
 
 // WebProjectCacheSidecar defines spec for cache sidecar

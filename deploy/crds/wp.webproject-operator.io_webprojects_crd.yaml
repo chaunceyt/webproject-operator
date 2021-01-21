@@ -85,17 +85,12 @@ spec:
                   type: boolean
               type: object
             dockerconfig:
-              description: WebProjectDockerConfig defines spec for cache sidecar
+              description: WebProjectDockerConfig defines setup ImagePullSecret for
+                private registry.
               properties:
-                email:
-                  type: string
                 enabled:
                   type: boolean
-                password:
-                  type: string
-                registryurl:
-                  type: string
-                username:
+                secretname:
                   type: string
               required:
               - enabled

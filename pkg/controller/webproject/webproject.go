@@ -15,7 +15,6 @@ limitations under the License.
 package webproject
 
 import (
-	"encoding/json"
 	"fmt"
 
 	wp "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
@@ -25,7 +24,6 @@ import (
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -69,7 +67,7 @@ func (r *ReconcileWebproject) deploymentForWebproject(cr *wp.WebProject) *appsv1
 	if cr.Spec.DockerConfig.Enabled {
 		deployment.Spec.Template.Spec.ImagePullSecrets = append(
 			deployment.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
-				Name: workloadName(cr, "docker-config"),
+				Name: cr.Spec.DockerConfig.Secretname,
 			},
 		)
 	}
@@ -128,39 +126,6 @@ func (r *ReconcileWebproject) envConfigMapForWebproject(cr *wp.WebProject) *core
 			"MYSQL_USER":     cr.Spec.DatabaseSidecar.DatabaseUser,
 			"MYSQL_DATABASE": cr.Spec.DatabaseSidecar.DatabaseName,
 		},
-	}
-	// Set Operator instance as the owner and controller
-	controllerutil.SetControllerReference(cr, dep, r.scheme)
-	return dep
-}
-
-// secretForWebproject returns a webproject configmap object
-func (r *ReconcileWebproject) dockerconfigSecretForWebproject(cr *wp.WebProject) *corev1.Secret {
-	// create dockerconfig json object.
-	dockerEntry := DockerConfigEntry{
-		Username: cr.Spec.DockerConfig.Username,
-		Password: cr.Spec.DockerConfig.Password,
-	}
-	registryURL := cr.Spec.DockerConfig.RegistryURL
-
-	dockerConfig := DockerConfigJson{
-		Auths: map[string]DockerConfigEntry{
-			registryURL: dockerEntry,
-		},
-	}
-	secretData, err := json.Marshal(dockerConfig)
-
-	if err != nil {
-		log.Error(err, "Failed to get docker Secret", "Secret.Namespace", cr.Namespace, "Secret.Name", cr.Name)
-	}
-	dep := &corev1.Secret{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      workloadName(cr, "docker-config"),
-			Namespace: cr.Namespace,
-			Labels:    labels(cr, "config"),
-		},
-		Type: "kubernetes.io/dockerconfigjson",
-		Data: map[string][]byte{".dockerconfigjson": secretData},
 	}
 	// Set Operator instance as the owner and controller
 	controllerutil.SetControllerReference(cr, dep, r.scheme)

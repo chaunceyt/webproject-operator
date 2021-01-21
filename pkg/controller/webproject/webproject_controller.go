@@ -223,12 +223,6 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
-	// ensureDockerConfigSecret - manage the ImagePullSecrets for webproject.
-	result, err = r.ensureDockerConfigSecret(request, webproject, r.dockerconfigSecretForWebproject(webproject))
-	if result != nil {
-		return *result, err
-	}
-
 	return reconcile.Result{}, nil
 }
 
