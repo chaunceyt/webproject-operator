@@ -199,6 +199,7 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wp.WebProject) *networkin
 			},
 		},
 	}
+
 	subDomains := webprojectDomainNames(cr)
 	ingressSpec := networkingv1beta1.IngressSpec{
 		TLS: []networkingv1beta1.IngressTLS{
@@ -207,23 +208,13 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wp.WebProject) *networkin
 			},
 		},
 	}
-	// Allow webapp to handle ssl redirects - nginx.ingress.kubernetes.io/ssl-redirect: "false"
-	// Add auth - nginx.ingress.kubernetes.io/auth-url: https://auth.domain.com/prod/auth
-	// Add signin - nginx.ingress.kubernetes.io/auth-signin: https://auth.domain.com/prod/signin
-	// Add support for rewriting of target - "nginx.ingress.kubernetes.io/rewrite-target":    "/$2",
-	// Add nginx.ingress.kubernetes.io/auth-tls-verify-client: "off" and nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-	// if the project is using gatsby custom certs.
+
 	ingress := &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      workloadName(cr, "ingress"),
-			Labels:    labels(cr, "ingress"),
-			Namespace: cr.Namespace,
-			Annotations: map[string]string{
-				"kubernetes.io/ingress.class":                   "nginx",
-				"nginx.ingress.kubernetes.io/proxy-body-size":   "0",
-				"nginx.ingress.kubernetes.io/proxy-buffer-size": "16k",
-				"nginx.ingress.kubernetes.io/ssl-passthrough":   "true",
-			},
+			Name:        workloadName(cr, "ingress"),
+			Labels:      labels(cr, "ingress"),
+			Namespace:   cr.Namespace,
+			Annotations: cr.Spec.IngressAnnotations,
 		},
 		Spec: ingressSpec,
 	}

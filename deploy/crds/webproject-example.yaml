@@ -67,6 +67,18 @@ spec:
     - domainnine
     - domainten
 
+  # Allow webapp to handle ssl redirects - nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  # Add auth - nginx.ingress.kubernetes.io/auth-url: https://auth.domain.com/prod/auth
+  # Add signin - nginx.ingress.kubernetes.io/auth-signin: https://auth.domain.com/prod/signin
+  # Add support for rewriting of target - "nginx.ingress.kubernetes.io/rewrite-target":    "/$2",
+  # Add nginx.ingress.kubernetes.io/auth-tls-verify-client: "off" and nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+  # if the project is using custom certs. (i.e. gatsby)
+  ingressannotations:
+    "kubernetes.io/ingress.class": "nginx"
+    "nginx.ingress.kubernetes.io/proxy-body-size": "0"
+    "nginx.ingress.kubernetes.io/proxy-buffer-size": "16k"
+    "nginx.ingress.kubernetes.io/ssl-passthrough": "true"
+
   # initcontainer script
   initcontainerscript: |-
     #!/bin/bash

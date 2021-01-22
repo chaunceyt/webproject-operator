@@ -29,6 +29,7 @@ type WebProjectSpec struct {
 	FileStorageMountPath string                    `json:"filestoragemountpath"`
 	InitContainerScript  string                    `json:"initcontainerscript,omitempty"`
 	IngressHosts         []string                  `json:"ingresshosts,omitempty"`
+	IngressAnnotations   map[string]string         `json:"ingressannotations,omitempty"`
 	ProjectDomainName    string                    `json:"projectdomainname"`
 	ProjectName          string                    `json:"projectname"`
 	ReleaseName          string                    `json:"releasename"`

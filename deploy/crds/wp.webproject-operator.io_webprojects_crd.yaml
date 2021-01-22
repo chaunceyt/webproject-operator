@@ -99,6 +99,10 @@ spec:
               type: string
             filestoragesize:
               type: string
+            ingressannotations:
+              additionalProperties:
+                type: string
+              type: object
             ingresshosts:
               items:
                 type: string

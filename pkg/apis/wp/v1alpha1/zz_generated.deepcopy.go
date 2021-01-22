@@ -160,6 +160,13 @@ func (in *WebProjectSpec) DeepCopyInto(out *WebProjectSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.IngressAnnotations != nil {
+		in, out := &in.IngressAnnotations, &out.IngressAnnotations
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	out.WebContainer = in.WebContainer
 	if in.CommonConfig != nil {
 		in, out := &in.CommonConfig, &out.CommonConfig
