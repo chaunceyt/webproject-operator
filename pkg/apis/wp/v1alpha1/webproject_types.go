@@ -20,21 +20,23 @@ import (
 
 // WebProjectSpec defines the desired state of WebProject
 type WebProjectSpec struct {
-	AWSSecretName        string                    `json:"awssecretname,omitempty"`
-	CLISidecar           WebProjectCLISidecar      `json:"clisidecar,omitempty"`
-	CacheSidecar         WebProjectCacheSidecar    `json:"cachesidecar,omitempty"`
-	DatabaseSidecar      WebProjectDatabaseSidecar `json:"databasesidecar,omitempty"`
-	DockerConfig         WebProjectDockerConfig    `json:"dockerconfig,omitempty"`
-	FileStorageSize      string                    `json:"filestoragesize"`
-	FileStorageMountPath string                    `json:"filestoragemountpath"`
-	InitContainerScript  string                    `json:"initcontainerscript,omitempty"`
-	IngressHosts         []string                  `json:"ingresshosts,omitempty"`
-	IngressAnnotations   map[string]string         `json:"ingressannotations,omitempty"`
-	ProjectDomainName    string                    `json:"projectdomainname"`
-	ProjectName          string                    `json:"projectname"`
-	ReleaseName          string                    `json:"releasename"`
-	WebContainer         WebProjectWebContainer    `json:"webcontainer"`
-	CommonConfig         map[string]string         `json:"commonconfig"`
+	AWSSecretName         string                    `json:"awssecretname,omitempty"`
+	CLISidecar            WebProjectCLISidecar      `json:"clisidecar,omitempty"`
+	CacheSidecar          WebProjectCacheSidecar    `json:"cachesidecar,omitempty"`
+	DatabaseSidecar       WebProjectDatabaseSidecar `json:"databasesidecar,omitempty"`
+	DockerConfig          WebProjectDockerConfig    `json:"dockerconfig,omitempty"`
+	FileStorageSize       string                    `json:"filestoragesize"`
+	FileStorageMountPath  string                    `json:"filestoragemountpath"`
+	InitContainerScript   string                    `json:"initcontainerscript,omitempty"`
+	IngressHosts          []string                  `json:"ingresshosts,omitempty"`
+	DeploymentAnnotations map[string]string         `json:"deploymentannotations,omitempty"`
+	IngressAnnotations    map[string]string         `json:"ingressannotations,omitempty"`
+	ProjectDomainName     string                    `json:"projectdomainname"`
+	ProjectName           string                    `json:"projectname"`
+	ReleaseName           string                    `json:"releasename"`
+	SearchSidecar         WebProjectSearchSidecar   `json:"searchsidecar,omitempty"`
+	WebContainer          WebProjectWebContainer    `json:"webcontainer"`
+	CommonConfig          map[string]string         `json:"commonconfig"`
 }
 
 // WebProjectWebContainer defines to spec for webcontainer
@@ -62,6 +64,13 @@ type WebProjectCLISidecar struct {
 	Port    int32  `json:"port,omitempty"`
 }
 
+// WebProjectCacheSidecar defines spec for cache sidecar
+type WebProjectSearchSidecar struct {
+	Enabled bool   `json:"enabled"`
+	Engine  string `json:"engine,omitempty"`
+	Image   string `json:"image,omitempty"`
+}
+
 // WebProjectDatabaseSidecar defines the desired state for database sidecar
 type WebProjectDatabaseSidecar struct {
 	Enabled                bool   `json:"enabled,omitempty"`
@@ -72,6 +81,11 @@ type WebProjectDatabaseSidecar struct {
 	DatabaseRootPassword   string `json:"databaserootpassword,omitempty"`
 	DatabaseStoreMountPath string `json:"databasestoragemountpath,omitempty"`
 	DatabaseUserPassword   string `json:"databaseuserpassword,omitempty"`
+}
+
+type WebProjectBackup struct {
+	Enabled         bool   `json:"enabled,omitempty"`
+	StorageProvider string `json:"storageprovider,omitempty"`
 }
 
 // WebProjectStatus defines the observed state of WebProject

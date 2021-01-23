@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	wp "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
-	"github.com/chaunceyt/webproject-operator/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -37,15 +36,11 @@ func (r *ReconcileWebproject) deploymentForWebproject(cr *wp.WebProject) *appsv1
 		"app.kubernetes.io/name": cr.Name,
 	}
 
-	annotations := map[string]string{
-		"creator": "webproject-operator.wp.com/" + version.Version,
-	}
-
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        cr.Spec.ReleaseName,
 			Namespace:   cr.Namespace,
-			Annotations: annotations,
+			Annotations: cr.Spec.DeploymentAnnotations,
 			Labels:      labels(cr, "deployment"),
 		},
 
@@ -309,7 +304,6 @@ func webProjectPodSpec(cr *wp.WebProject) corev1.PodSpec {
 			{
 				Name: "webroot",
 				VolumeSource: corev1.VolumeSource{
-
 					EmptyDir: &corev1.EmptyDirVolumeSource{},
 				},
 			},
@@ -401,6 +395,22 @@ func webProjectPodSpec(cr *wp.WebProject) corev1.PodSpec {
 		webpod.Containers = append(webpod.Containers, cacheContainerSpec(cr))
 	}
 
+	// append search sidecar
+	if cr.Spec.SearchSidecar.Enabled {
+		if cr.Spec.SearchSidecar.Engine == "es" {
+			webpod.Containers = append(webpod.Containers, elasticSearchContainerSpec(cr))
+		} else if cr.Spec.SearchSidecar.Engine == "solr" {
+			webpod.Containers = append(webpod.Containers, solrSearchContainerSpec(cr))
+		}
+
+		webpod.Volumes = append(webpod.Volumes, corev1.Volume{
+			Name: "search-data",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
+	}
+
 	return webpod
 }
 
@@ -475,13 +485,6 @@ func webContainerSpec(cr *wp.WebProject) corev1.Container {
 			ContainerPort: 80,
 			Name:          "web-port",
 		}},
-
-		Resources: corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("200m"),
-				corev1.ResourceMemory: resource.MustParse("128Mi"),
-			},
-		},
 		ReadinessProbe: &corev1.Probe{
 			InitialDelaySeconds: 5,
 			PeriodSeconds:       2,
@@ -505,7 +508,6 @@ func webContainerSpec(cr *wp.WebProject) corev1.Container {
 		},
 		SecurityContext: &corev1.SecurityContext{
 			RunAsNonRoot:             createBool(false),
-			ReadOnlyRootFilesystem:   createBool(false),
 			AllowPrivilegeEscalation: createBool(false),
 		},
 	}
@@ -550,12 +552,6 @@ func cliContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.CLISidecar.Image,
 		Name:  "cli",
-		Resources: corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-				corev1.ResourceMemory: resource.MustParse("128Mi"),
-			},
-		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "webroot",
@@ -616,17 +612,7 @@ func cliContainerSpec(cr *wp.WebProject) corev1.Container {
 func databaseContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.DatabaseSidecar.DatabaseImage,
-		Resources: corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-				corev1.ResourceMemory: resource.MustParse("128Mi"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-				corev1.ResourceMemory: resource.MustParse("128Mi"),
-			},
-		},
-		Name: "database",
+		Name:  "database",
 
 		Env: []corev1.EnvVar{
 			{
@@ -659,8 +645,8 @@ func databaseContainerSpec(cr *wp.WebProject) corev1.Container {
 		},
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: createBool(false),
-			RunAsNonRoot:             createBool(false),
 			ReadOnlyRootFilesystem:   createBool(false),
+			RunAsNonRoot:             createBool(false),
 		},
 	}
 
@@ -678,6 +664,78 @@ func cacheContainerSpec(cr *wp.WebProject) corev1.Container {
 		}},
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: createBool(false),
+			ReadOnlyRootFilesystem:   createBool(false),
+			RunAsNonRoot:             createBool(false),
+		},
+	}
+
+	return container
+}
+
+// solrSearchContainerSpec - search sidecar
+// TODO: create service giving access to solr admin
+func solrSearchContainerSpec(cr *wp.WebProject) corev1.Container {
+	container := corev1.Container{
+		Image: cr.Spec.SearchSidecar.Image,
+		Name:  "search",
+		Ports: []corev1.ContainerPort{{
+			ContainerPort: int32(8983),
+			Name:          "search-port",
+		}},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: createBool(false),
+			ReadOnlyRootFilesystem:   createBool(false),
+			RunAsNonRoot:             createBool(false),
+		},
+	}
+
+	return container
+}
+
+// elasticSearchContainerSpec - search sidecar
+func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
+	container := corev1.Container{
+		Image: cr.Spec.SearchSidecar.Image,
+		Name:  "search",
+		Ports: []corev1.ContainerPort{
+			{
+				ContainerPort: int32(9200),
+				Name:          "reset-port",
+			},
+			{
+				ContainerPort: int32(9300),
+				Name:          "intra-node-port",
+			},
+		},
+		StartupProbe: &corev1.Probe{
+			InitialDelaySeconds: 5,
+			PeriodSeconds:       2,
+			Handler: corev1.Handler{
+				Exec: &corev1.ExecAction{
+					Command: []string{"sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"},
+				},
+			},
+		},
+		Env: []corev1.EnvVar{
+			{
+				Name:  "discovery.type",
+				Value: "single-node",
+			},
+			{
+				Name:  "ES_JAVA_OPTS",
+				Value: "-Xms512m -Xmx512m",
+			},
+		},
+		VolumeMounts: []corev1.VolumeMount{
+			{
+				Name:      "search-data",
+				MountPath: "/usr/share/elasticsearch/data",
+			},
+		},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: createBool(false),
+			ReadOnlyRootFilesystem:   createBool(false),
+			RunAsNonRoot:             createBool(false),
 		},
 	}
 
@@ -692,7 +750,7 @@ func workloadName(cr *wp.WebProject, workloadType string) string {
 func webprojectDomainNames(cr *wp.WebProject) []string {
 	subDomains := []string{}
 	domains := cr.Spec.IngressHosts
-	//domains := strings.Split(cr.Spec.IngressHosts, ",")
+
 	for _, domain := range domains {
 		str := fmt.Sprintf("release-%s-"+cr.Spec.ProjectDomainName, domain)
 		subDomains = append(subDomains, str)

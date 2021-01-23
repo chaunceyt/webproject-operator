@@ -11,6 +11,11 @@ spec:
   projectname: developer-cthorn
   projectdomainname: developer-cthorn.kube.domain.tld
 
+  deploymentannotations:
+    "project-lead": "developer-name"
+    "project-lead-email": "developer-name@domain.tld"
+    "project-language": "lang"
+  
   # AWS secret name
 
   # RELEASE_NAME
@@ -27,11 +32,19 @@ spec:
     enabled: true
     image: outrigger/cli:2-php7.3
 
+  # Search sidecar [solr or elasticsearch]
+  searchsidecar:
+    enabled: true
+    # es|solr
+    engine: solr
+    image: solr:8.7.0
+    #image: elasticsearch:7.10.1
+
   # database sidecar image
   databasesidecar:
     enabled: true
     databasename: drupal_db
-    databaseimage: mysql:8.0.22
+    databaseimage: mysql:5.6.51
     databaseuser: admin
     databaseuserpassword: admin123
     databasestoragesize: 2Gi
@@ -41,9 +54,8 @@ spec:
   # cache sidecar image
   cachesidecar:
     enabled: true
-    image: redis
-    tag: 6.0.9-alpine
-    port: 6379 
+    image: memcached:1.6.9
+    port: 11211
 
   # file storege size and mountpath
   filestoragesize: 10Gi

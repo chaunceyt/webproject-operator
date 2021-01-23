@@ -84,6 +84,10 @@ spec:
                 enabled:
                   type: boolean
               type: object
+            deploymentannotations:
+              additionalProperties:
+                type: string
+              type: object
             dockerconfig:
               description: WebProjectDockerConfig defines setup ImagePullSecret for
                 private registry.
@@ -115,6 +119,18 @@ spec:
               type: string
             releasename:
               type: string
+            searchsidecar:
+              description: WebProjectCacheSidecar defines spec for cache sidecar
+              properties:
+                enabled:
+                  type: boolean
+                engine:
+                  type: string
+                image:
+                  type: string
+              required:
+              - enabled
+              type: object
             webcontainer:
               description: WebProjectWebContainer defines to spec for webcontainer
               properties:
