@@ -19,6 +19,7 @@ import (
 
 	wp "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -122,6 +123,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	err = c.Watch(&source.Kind{Type: &v1beta1.CronJob{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &wp.WebProject{},
+	})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -199,6 +209,12 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
+	// ensureSerivce - ensure the k8s service is managed.
+	result, err = r.ensureService(request, webproject, r.backupServiceForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
 	// ensureEnvConfigMap - manage environmental variable config map for webproject.
 	result, err = r.ensureEnvConfigMap(request, webproject, r.envConfigMapForWebproject(webproject))
 	if result != nil {
@@ -223,6 +239,11 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
+	// ensureCronJob - manage backups for database.
+	result, err = r.ensureCronJob(request, webproject, r.backupCronJob(webproject))
+	if result != nil {
+		return *result, err
+	}
 	return reconcile.Result{}, nil
 }
 

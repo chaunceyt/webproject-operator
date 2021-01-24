@@ -21,6 +21,7 @@ spec:
   # RELEASE_NAME
   releasename: developer-cthorn
 
+
   # default web image
   webcontainer:
     image: nginx:1.19.4
@@ -50,6 +51,28 @@ spec:
     databasestoragesize: 2Gi
     databaserootpassword: rootpasswd123
     databasestoragemountpath: /var/lib/mysql
+    # Perform backups to aws or gcp bucket
+    backup:
+      enabled: false
+      # aws, gcp
+      provider: aws
+
+      # aws: s3://
+      # gcp: gs://
+      bucket: s3://pahtobucket/dir/path/filename-[releasename]-latest.tar.gz
+
+      # Add the following variable environment to a secret
+      # aws
+      # AWS_ACCESS_KEY_ID: #
+      # AWS_SECRET_ACCESS_KEY: #
+      # AWS_REGION: us-east-1
+      # gcp
+      # GCS_SERVICE_ACCOUNT_JSON_KEY: ?
+      # GCS_PROJECT_ID: ?
+      backupsecretname: backup-secret
+      backupschedule: "0 * * * *"
+      backupschedulehobshistorylimit: 10
+
 
   # cache sidecar image
   cachesidecar:

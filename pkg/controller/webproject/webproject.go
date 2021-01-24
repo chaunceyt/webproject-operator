@@ -19,6 +19,8 @@ import (
 
 	wp "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -69,6 +71,42 @@ func (r *ReconcileWebproject) deploymentForWebproject(cr *wp.WebProject) *appsv1
 
 	controllerutil.SetControllerReference(cr, deployment, r.scheme)
 	return deployment
+
+}
+
+func (r *ReconcileWebproject) backupServiceForWebproject(cr *wp.WebProject) *corev1.Service {
+	matchlabels := map[string]string{
+		"app.kubernetes.io/name": cr.Name,
+	}
+
+	service := &corev1.Service{
+
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workloadName(cr, "backup-svc"),
+			Namespace: cr.Namespace,
+			Labels:    labels(cr, "service"),
+		},
+
+		Spec: corev1.ServiceSpec{
+			Selector: matchlabels,
+
+			Ports: []corev1.ServicePort{
+				{
+					Port: 3306, // externalPort
+					TargetPort: intstr.IntOrString{
+						Type:   Int,
+						IntVal: 3306,
+					}, // internalPort
+					Protocol: "TCP",
+					Name:     "backup-port",
+				},
+			},
+			Type: corev1.ServiceTypeClusterIP,
+		},
+	}
+
+	controllerutil.SetControllerReference(cr, service, r.scheme)
+	return service
 
 }
 
@@ -740,6 +778,78 @@ func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 	}
 
 	return container
+}
+
+func (r *ReconcileWebproject) backupCronJob(cr *wp.WebProject) *v1beta1.CronJob {
+	hostname := workloadName(cr, "backup-svc") + "." + cr.Namespace
+
+	// TODO:
+	// - Add configmap that contains the script to backup the database
+	// - Add DB_HOST to ENV workloadName(cr, "backup-svc") + "." + cr.Namespace
+	backupCommand := "echo 'Starting DB Backup'  &&  mysql --version &&  mysqlshow -h '" + hostname + "' -u$MYSQL_USER -p$MYSQL_PASSWORD && mysqldump -h '" + hostname +
+		"' --opt $MYSQL_DATABASE > /var/lib/mysql/database-backup-drupal_db.sql -uroot -p$MYSQL_ROOT_PASSWORD && cd /var/lib/mysql/ && gzip database-backup-drupal_db.sql && ls -ltr /var/lib/mysql/"
+	cron := &v1beta1.CronJob{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+			Labels:    labels(cr, "backup"),
+		},
+		Spec: v1beta1.CronJobSpec{
+			Schedule: cr.Spec.DatabaseSidecar.Backup.BackupSchedule,
+			JobTemplate: v1beta1.JobTemplateSpec{
+				Spec: batchv1.JobSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Volumes: []corev1.Volume{
+								{
+									Name: "mariadb-bkp-pv-storage",
+									VolumeSource: corev1.VolumeSource{
+										EmptyDir: &corev1.EmptyDirVolumeSource{},
+									},
+								},
+							},
+							Containers: []corev1.Container{
+								{
+									Name:    cr.Name,
+									Image:   cr.Spec.DatabaseSidecar.DatabaseImage,
+									Command: []string{"/bin/sh", "-c"},
+									Args:    []string{backupCommand},
+									VolumeMounts: []corev1.VolumeMount{
+										{
+											Name:      "mariadb-bkp-pv-storage",
+											MountPath: "/var/lib/mysql",
+										},
+									},
+									Env: []corev1.EnvVar{
+										{
+											Name:  "MYSQL_ROOT_PASSWORD",
+											Value: cr.Spec.DatabaseSidecar.DatabaseRootPassword,
+										},
+										{
+											Name:  "MYSQL_DATABASE",
+											Value: cr.Spec.DatabaseSidecar.DatabaseName,
+										},
+										{
+											Name:  "MYSQL_USER",
+											Value: cr.Spec.DatabaseSidecar.DatabaseUser,
+										},
+										{
+											Name:  "MYSQL_PASSWORD",
+											Value: cr.Spec.DatabaseSidecar.DatabaseUserPassword,
+										},
+									},
+								},
+							},
+							RestartPolicy: corev1.RestartPolicyOnFailure,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	controllerutil.SetControllerReference(cr, cron, r.scheme)
+	return cron
 }
 
 // workloadName

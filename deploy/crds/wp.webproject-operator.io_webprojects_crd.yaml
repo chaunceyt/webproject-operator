@@ -33,6 +33,17 @@ spec:
           properties:
             awssecretname:
               type: string
+            backup:
+              properties:
+                backupschedule:
+                  type: string
+                enabled:
+                  type: boolean
+                storageprovider:
+                  type: string
+              required:
+              - backupschedule
+              type: object
             cachesidecar:
               description: WebProjectCacheSidecar defines spec for cache sidecar
               properties:
@@ -67,6 +78,17 @@ spec:
               description: WebProjectDatabaseSidecar defines the desired state for
                 database sidecar
               properties:
+                backup:
+                  properties:
+                    backupschedule:
+                      type: string
+                    enabled:
+                      type: boolean
+                    storageprovider:
+                      type: string
+                  required:
+                  - backupschedule
+                  type: object
                 databaseimage:
                   type: string
                 databasename:

@@ -20,6 +20,7 @@ import (
 
 	wp "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -308,6 +309,36 @@ func (r *ReconcileWebproject) ensureSecret(request reconcile.Request, instance *
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
 		log.Error(err, "Failed to get Secret")
+		return &reconcile.Result{}, err
+	}
+
+	return nil, nil
+}
+
+func (r *ReconcileWebproject) ensureCronJob(request reconcile.Request, instance *wp.WebProject, cron *v1beta1.CronJob) (*reconcile.Result, error) {
+	found := &v1beta1.CronJob{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      cron.Name,
+		Namespace: instance.Namespace,
+	}, found)
+	if err != nil && errors.IsNotFound(err) {
+
+		// Create the secret
+		log.Info("Creating a new Secret", "CronJob.Namespace", cron.Namespace, "CronJob.Name", cron.Name)
+		err = r.client.Create(context.TODO(), cron)
+
+		if err != nil {
+			// Creation failed
+			log.Error(err, "Failed to create new Secret", "CronJob.Namespace", cron.Namespace, "CronJob.Name", cron.Name)
+			return &reconcile.Result{}, err
+		}
+		// Creation was successful - return and requeue
+		return nil, nil
+
+	} else if err != nil {
+		// Error that isn't due to the secret not existing
+		log.Error(err, "Failed to get Cronjob")
 		return &reconcile.Result{}, err
 	}
 

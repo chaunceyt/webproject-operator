@@ -21,6 +21,7 @@ import (
 // WebProjectSpec defines the desired state of WebProject
 type WebProjectSpec struct {
 	AWSSecretName         string                    `json:"awssecretname,omitempty"`
+	Backup                WebProjectBackup          `json:"backup,omitempty"`
 	CLISidecar            WebProjectCLISidecar      `json:"clisidecar,omitempty"`
 	CacheSidecar          WebProjectCacheSidecar    `json:"cachesidecar,omitempty"`
 	DatabaseSidecar       WebProjectDatabaseSidecar `json:"databasesidecar,omitempty"`
@@ -73,19 +74,21 @@ type WebProjectSearchSidecar struct {
 
 // WebProjectDatabaseSidecar defines the desired state for database sidecar
 type WebProjectDatabaseSidecar struct {
-	Enabled                bool   `json:"enabled,omitempty"`
-	DatabaseName           string `json:"databasename,omitempty"`
-	DatabaseImage          string `json:"databaseimage,omitempty"`
-	DatabaseUser           string `json:"databaseuser,omitempty"`
-	DatabaseStorageSize    string `json:"databasestoragesize,omitempty"`
-	DatabaseRootPassword   string `json:"databaserootpassword,omitempty"`
-	DatabaseStoreMountPath string `json:"databasestoragemountpath,omitempty"`
-	DatabaseUserPassword   string `json:"databaseuserpassword,omitempty"`
+	Enabled                bool             `json:"enabled,omitempty"`
+	DatabaseName           string           `json:"databasename,omitempty"`
+	DatabaseImage          string           `json:"databaseimage,omitempty"`
+	DatabaseUser           string           `json:"databaseuser,omitempty"`
+	DatabaseStorageSize    string           `json:"databasestoragesize,omitempty"`
+	DatabaseRootPassword   string           `json:"databaserootpassword,omitempty"`
+	DatabaseStoreMountPath string           `json:"databasestoragemountpath,omitempty"`
+	DatabaseUserPassword   string           `json:"databaseuserpassword,omitempty"`
+	Backup                 WebProjectBackup `json:"backup,omitempty"`
 }
 
 type WebProjectBackup struct {
 	Enabled         bool   `json:"enabled,omitempty"`
 	StorageProvider string `json:"storageprovider,omitempty"`
+	BackupSchedule  string `json:"backupschedule"`
 }
 
 // WebProjectStatus defines the observed state of WebProject
