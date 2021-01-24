@@ -324,20 +324,20 @@ func (r *ReconcileWebproject) ensureCronJob(request reconcile.Request, instance 
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
 
-		// Create the secret
-		log.Info("Creating a new Secret", "CronJob.Namespace", cron.Namespace, "CronJob.Name", cron.Name)
+		// Create the cronjob
+		log.Info("Creating a new CronJob", "CronJob.Namespace", cron.Namespace, "CronJob.Name", cron.Name)
 		err = r.client.Create(context.TODO(), cron)
 
 		if err != nil {
 			// Creation failed
-			log.Error(err, "Failed to create new Secret", "CronJob.Namespace", cron.Namespace, "CronJob.Name", cron.Name)
+			log.Error(err, "Failed to create new CronJob", "CronJob.Namespace", cron.Namespace, "CronJob.Name", cron.Name)
 			return &reconcile.Result{}, err
 		}
 		// Creation was successful - return and requeue
 		return nil, nil
 
 	} else if err != nil {
-		// Error that isn't due to the secret not existing
+		// Error that isn't due to the cronjob not existing
 		log.Error(err, "Failed to get Cronjob")
 		return &reconcile.Result{}, err
 	}
