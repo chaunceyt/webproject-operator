@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -66,9 +67,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Webproject
-
+	// Watch for changes to resource Deployment
 	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &wp.WebProject{},
@@ -78,6 +77,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to resource ConfigMap
 	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &wp.WebProject{},
@@ -87,6 +87,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to resource Secret
 	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &wp.WebProject{},
@@ -96,6 +97,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to resource Ingress
 	err = c.Watch(&source.Kind{Type: &networkingv1beta1.Ingress{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &wp.WebProject{},
@@ -105,6 +107,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to resource Service
 	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &wp.WebProject{},
@@ -114,6 +117,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to resource PersistentVolumeClaim
 	err = c.Watch(&source.Kind{Type: &corev1.PersistentVolumeClaim{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &wp.WebProject{},
@@ -123,6 +127,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to resource CronJob
 	err = c.Watch(&source.Kind{Type: &v1beta1.CronJob{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &wp.WebProject{},
@@ -233,6 +238,18 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
+	// ensureWebContainerCronJobConfigMap - manage script configmap
+	result, err = r.ensureWebContainerCronJobConfigMap(request, webproject, r.webcontainerCronJobConfigMapForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
+	// ensureDatabaseSidecarCronJobConfigMap - manage script configmap
+	result, err = r.ensureDatabaseSidecarCronJobConfigMap(request, webproject, r.databaseSidecarCronJobConfigMapForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
 	// ensureSecret - manage secrets for mysql database, etc
 	result, err = r.ensureSecret(request, webproject, r.secretForWebproject(webproject))
 	if result != nil {
@@ -244,6 +261,93 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 	if result != nil {
 		return *result, err
 	}
+
+	// updateWebProjectStatus
+	// TODO: list each object name within webproject.
+	// err = r.updateWebProjectStatus(webproject)
+	WebProject := webproject
+	podList := &corev1.PodList{}
+	configmapList := &corev1.ConfigMapList{}
+	secretsList := &corev1.SecretList{}
+
+	lbs := map[string]string{
+		"app.kubernetes.io/name": webproject.Name,
+	}
+	labelSelector := labels.SelectorFromSet(lbs)
+	listOps := &client.ListOptions{Namespace: webproject.Namespace, LabelSelector: labelSelector}
+
+	if err = r.client.List(context.TODO(), podList, listOps); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err != nil {
+		// Requeue the request if the status could not be updated
+		return reconcile.Result{}, err
+	}
+	if err = r.client.List(context.TODO(), configmapList, listOps); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err != nil {
+		// Requeue the request if the status could not be updated
+		return reconcile.Result{}, err
+	}
+	if err = r.client.List(context.TODO(), secretsList, listOps); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err != nil {
+		// Requeue the request if the status could not be updated
+		return reconcile.Result{}, err
+	}
+
+	// Count the pods that are pending or running as available
+	var available []corev1.Pod
+	for _, pod := range podList.Items {
+		if pod.ObjectMeta.DeletionTimestamp != nil {
+			continue
+		}
+		if pod.Status.Phase == corev1.PodRunning || pod.Status.Phase == corev1.PodPending {
+			available = append(available, pod)
+		}
+	}
+
+	availableNames := []string{}
+	for _, pod := range available {
+		availableNames = append(availableNames, pod.ObjectMeta.Name)
+	}
+
+	// get configMaps owned by this workload.
+	var configmapAvailable []corev1.ConfigMap
+	configmapNames := []string{}
+	for _, configmap := range configmapList.Items {
+		configmapAvailable = append(configmapAvailable, configmap)
+	}
+
+	for _, configmap := range configmapAvailable {
+		configmapNames = append(configmapNames, configmap.ObjectMeta.Name)
+	}
+
+	// get configMaps owned by this workload.
+	var secretsAvailable []corev1.Secret
+	secretsNames := []string{}
+	for _, secret := range secretsList.Items {
+		secretsAvailable = append(secretsAvailable, secret)
+	}
+
+	for _, secret := range secretsAvailable {
+		secretsNames = append(configmapNames, secret.ObjectMeta.Name)
+	}
+	// Update the status if necessary
+	status := wp.WebProjectStatus{
+		PodNames:       availableNames,
+		ConfigMapNames: configmapNames,
+		SecretNames:    secretsNames,
+	}
+
+	WebProject.Status = status
+	err = r.client.Status().Update(context.TODO(), WebProject)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, nil
 }
 

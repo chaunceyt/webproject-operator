@@ -172,6 +172,66 @@ func (r *ReconcileWebproject) ensureIngress(request reconcile.Request, instance 
 	return nil, nil
 }
 
+func (r *ReconcileWebproject) ensureWebContainerCronJobConfigMap(request reconcile.Request, instance *wp.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
+	found := &corev1.ConfigMap{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      cm.Name,
+		Namespace: instance.Namespace,
+	}, found)
+	if err != nil && errors.IsNotFound(err) {
+
+		// Create the configmap
+		log.Info("Creating a new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
+		err = r.client.Create(context.TODO(), cm)
+
+		if err != nil {
+			// Creation failed
+			log.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
+			return &reconcile.Result{}, err
+		}
+		// Creation was successful
+		return nil, nil
+
+	} else if err != nil {
+		// Error that isn't due to the configmap not existing
+		log.Error(err, "Failed to get ConfigMap")
+		return &reconcile.Result{}, err
+	}
+
+	return nil, nil
+}
+
+func (r *ReconcileWebproject) ensureDatabaseSidecarCronJobConfigMap(request reconcile.Request, instance *wp.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
+	found := &corev1.ConfigMap{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      cm.Name,
+		Namespace: instance.Namespace,
+	}, found)
+	if err != nil && errors.IsNotFound(err) {
+
+		// Create the configmap
+		log.Info("Creating a new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
+		err = r.client.Create(context.TODO(), cm)
+
+		if err != nil {
+			// Creation failed
+			log.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", cm.Namespace, "ConfigMap.Name", cm.Name)
+			return &reconcile.Result{}, err
+		}
+		// Creation was successful
+		return nil, nil
+
+	} else if err != nil {
+		// Error that isn't due to the configmap not existing
+		log.Error(err, "Failed to get ConfigMap")
+		return &reconcile.Result{}, err
+	}
+
+	return nil, nil
+}
+
 func (r *ReconcileWebproject) ensureEnvConfigMap(request reconcile.Request, instance *wp.WebProject, cm *corev1.ConfigMap) (*reconcile.Result, error) {
 	found := &corev1.ConfigMap{}
 

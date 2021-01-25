@@ -34,6 +34,7 @@ spec:
             awssecretname:
               type: string
             backup:
+              description: WebProjectBackup defined the spec for backups.
               properties:
                 backupschedule:
                   type: string
@@ -47,13 +48,26 @@ spec:
             cachesidecar:
               description: WebProjectCacheSidecar defines spec for cache sidecar
               properties:
+                cronjob:
+                  description: WebProjectCronJob defines setup for cronjobs.
+                  properties:
+                    enabled:
+                      type: boolean
+                    schedule:
+                      type: string
+                    script:
+                      type: string
+                  required:
+                  - enabled
+                  - schedule
+                  - script
+                  type: object
                 enabled:
                   type: boolean
+                engine:
+                  type: string
                 image:
                   type: string
-                port:
-                  format: int32
-                  type: integer
               required:
               - enabled
               type: object
@@ -79,6 +93,7 @@ spec:
                 database sidecar
               properties:
                 backup:
+                  description: WebProjectBackup defined the spec for backups.
                   properties:
                     backupschedule:
                       type: string
@@ -88,6 +103,20 @@ spec:
                       type: string
                   required:
                   - backupschedule
+                  type: object
+                cronjob:
+                  description: WebProjectCronJob defines setup for cronjobs.
+                  properties:
+                    enabled:
+                      type: boolean
+                    schedule:
+                      type: string
+                    script:
+                      type: string
+                  required:
+                  - enabled
+                  - schedule
+                  - script
                   type: object
                 databaseimage:
                   type: string
@@ -142,7 +171,7 @@ spec:
             releasename:
               type: string
             searchsidecar:
-              description: WebProjectCacheSidecar defines spec for cache sidecar
+              description: WebProjectSearchSidecar defines spec for cache sidecar
               properties:
                 enabled:
                   type: boolean
@@ -156,6 +185,20 @@ spec:
             webcontainer:
               description: WebProjectWebContainer defines to spec for webcontainer
               properties:
+                cronjob:
+                  description: WebProjectCronJob defines setup for cronjobs.
+                  properties:
+                    enabled:
+                      type: boolean
+                    schedule:
+                      type: string
+                    script:
+                      type: string
+                  required:
+                  - enabled
+                  - schedule
+                  - script
+                  type: object
                 image:
                   type: string
               required:
@@ -172,6 +215,28 @@ spec:
           type: object
         status:
           description: WebProjectStatus defines the observed state of WebProject
+          properties:
+            configmapNames:
+              items:
+                type: string
+              type: array
+            podNames:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "operator-sdk generate k8s" to regenerate
+                code after modifying this file Add custom validation using kubebuilder
+                tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+                WebProject WebProjectSpec `json:"webproject,omitempty"`'
+              items:
+                type: string
+              type: array
+            secretNames:
+              items:
+                type: string
+              type: array
+          required:
+          - configmapNames
+          - podNames
+          - secretNames
           type: object
       type: object
   version: v1alpha1

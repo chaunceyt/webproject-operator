@@ -21,10 +21,18 @@ spec:
   # RELEASE_NAME
   releasename: developer-cthorn
 
-
   # default web image
+  # nginx:1.19.4
+  # httpd:2.4.46-alpine
+  # php:7.4.14-apache-buster
   webcontainer:
-    image: nginx:1.19.4
+    image: php:8.0.1-apache-buster
+    cronjob:
+      enabled: false
+      schedule: "0 * * * *"
+      script: |-
+        #!/bin/bash
+        echo "webcontainer cronjob script"
 
   # Sidecar Containers
 
@@ -34,14 +42,28 @@ spec:
     image: outrigger/cli:2-php7.3
 
   # Search sidecar [solr or elasticsearch]
+  # solr:8.7.0
+  # elasticsearch:7.10.1
+  # Drupal elasticsearch setup: composer require drupal/search_api drupal/elasticsearch_connector
+  #  https://opensenselabs.com/blog/tech/use-elastic-search-indexing-drupal
+  #  config-path: admin/config/search/elasticsearch-connector
+  #  serverUrl: SEARCH_HOST (localhost:9200)
   searchsidecar:
     enabled: true
     # es|solr
-    engine: solr
-    image: solr:8.7.0
-    #image: elasticsearch:7.10.1
+    engine: es
+    # image: solr:8.7.0
+    image: elasticsearch:7.10.1
+    cronjob:
+      enabled: false
+      schedule: "0 * * * *"
+      script: |-
+        #!/bin/bash
+        echo "searchsidecar cronjob script"
 
   # database sidecar image
+  # mysql:5.6.51
+  # mariadb:10.5.8
   databasesidecar:
     enabled: true
     databasename: drupal_db
@@ -51,6 +73,12 @@ spec:
     databasestoragesize: 2Gi
     databaserootpassword: rootpasswd123
     databasestoragemountpath: /var/lib/mysql
+    cronjob:
+      enabled: false
+      schedule: "0 * * * *"
+      script: |-
+        #!/bin/bash
+        echo "databasesidecar cronjob script"
     # Perform backups to aws or gcp bucket
     backup:
       enabled: false
@@ -71,14 +99,17 @@ spec:
       # GCS_PROJECT_ID: ?
       backupsecretname: backup-secret
       backupschedule: "0 * * * *"
-      backupschedulehobshistorylimit: 10
+      backupscheduledjobshistorylimit: 10
 
 
   # cache sidecar image
+  # memcached:1.6.9
+  # redis
   cachesidecar:
     enabled: true
+    # cache engine: memcached or redis
+    engine: memcached
     image: memcached:1.6.9
-    port: 11211
 
   # file storege size and mountpath
   filestoragesize: 10Gi

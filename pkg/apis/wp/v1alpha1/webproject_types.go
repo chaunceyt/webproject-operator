@@ -42,7 +42,8 @@ type WebProjectSpec struct {
 
 // WebProjectWebContainer defines to spec for webcontainer
 type WebProjectWebContainer struct {
-	Image string `json:"image"`
+	Image   string            `json:"image"`
+	CronJob WebProjectCronJob `json:"cronjob,omitempty"`
 }
 
 // WebProjectDockerConfig defines setup ImagePullSecret for private registry.
@@ -51,11 +52,19 @@ type WebProjectDockerConfig struct {
 	Secretname string `json:"secretname,omitempty"`
 }
 
+// WebProjectCronJob defines setup for cronjobs.
+type WebProjectCronJob struct {
+	Enabled  bool   `json:"enabled"`
+	Schedule string `json:"schedule"`
+	Script   string `json:"script"`
+}
+
 // WebProjectCacheSidecar defines spec for cache sidecar
 type WebProjectCacheSidecar struct {
-	Enabled bool   `json:"enabled"`
-	Image   string `json:"image,omitempty"`
-	Port    int32  `json:"port,omitempty"`
+	Enabled bool              `json:"enabled"`
+	Engine  string            `json:"engine,omitempty"`
+	Image   string            `json:"image,omitempty"`
+	CronJob WebProjectCronJob `json:"cronjob,omitempty"`
 }
 
 // WebProjectCLISidecar defines spec for cache sidecar
@@ -65,7 +74,7 @@ type WebProjectCLISidecar struct {
 	Port    int32  `json:"port,omitempty"`
 }
 
-// WebProjectCacheSidecar defines spec for cache sidecar
+// WebProjectSearchSidecar defines spec for cache sidecar
 type WebProjectSearchSidecar struct {
 	Enabled bool   `json:"enabled"`
 	Engine  string `json:"engine,omitempty"`
@@ -74,17 +83,19 @@ type WebProjectSearchSidecar struct {
 
 // WebProjectDatabaseSidecar defines the desired state for database sidecar
 type WebProjectDatabaseSidecar struct {
-	Enabled                bool             `json:"enabled,omitempty"`
-	DatabaseName           string           `json:"databasename,omitempty"`
-	DatabaseImage          string           `json:"databaseimage,omitempty"`
-	DatabaseUser           string           `json:"databaseuser,omitempty"`
-	DatabaseStorageSize    string           `json:"databasestoragesize,omitempty"`
-	DatabaseRootPassword   string           `json:"databaserootpassword,omitempty"`
-	DatabaseStoreMountPath string           `json:"databasestoragemountpath,omitempty"`
-	DatabaseUserPassword   string           `json:"databaseuserpassword,omitempty"`
-	Backup                 WebProjectBackup `json:"backup,omitempty"`
+	Enabled                bool              `json:"enabled,omitempty"`
+	DatabaseName           string            `json:"databasename,omitempty"`
+	DatabaseImage          string            `json:"databaseimage,omitempty"`
+	DatabaseUser           string            `json:"databaseuser,omitempty"`
+	DatabaseStorageSize    string            `json:"databasestoragesize,omitempty"`
+	DatabaseRootPassword   string            `json:"databaserootpassword,omitempty"`
+	DatabaseStoreMountPath string            `json:"databasestoragemountpath,omitempty"`
+	DatabaseUserPassword   string            `json:"databaseuserpassword,omitempty"`
+	CronJob                WebProjectCronJob `json:"cronjob,omitempty"`
+	Backup                 WebProjectBackup  `json:"backup,omitempty"`
 }
 
+// WebProjectBackup defined the spec for backups.
 type WebProjectBackup struct {
 	Enabled         bool   `json:"enabled,omitempty"`
 	StorageProvider string `json:"storageprovider,omitempty"`
@@ -96,6 +107,10 @@ type WebProjectStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	// WebProject WebProjectSpec `json:"webproject,omitempty"`
+	PodNames       []string `json:"podNames"`
+	ConfigMapNames []string `json:"configmapNames"`
+	SecretNames    []string `json:"secretNames"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

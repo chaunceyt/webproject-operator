@@ -15,6 +15,7 @@ limitations under the License.
 package webproject
 
 import (
+	"context"
 	"fmt"
 
 	wp "github.com/chaunceyt/webproject-operator/pkg/apis/wp/v1alpha1"
@@ -33,6 +34,12 @@ const (
 	Int intstr.Type = iota
 )
 
+func (r *ReconcileWebproject) updateWebProjectStatus(cr *wp.WebProject) error {
+	err := r.client.Status().Update(context.TODO(), cr)
+	return err
+}
+
+// deploymentForWebproject - standard object to manage the webproject's pod.
 func (r *ReconcileWebproject) deploymentForWebproject(cr *wp.WebProject) *appsv1.Deployment {
 	matchlabels := map[string]string{
 		"app.kubernetes.io/name": cr.Name,
@@ -43,7 +50,7 @@ func (r *ReconcileWebproject) deploymentForWebproject(cr *wp.WebProject) *appsv1
 			Name:        cr.Spec.ReleaseName,
 			Namespace:   cr.Namespace,
 			Annotations: cr.Spec.DeploymentAnnotations,
-			Labels:      labels(cr, "deployment"),
+			Labels:      webprojectlabels(cr, "deployment"),
 		},
 
 		Spec: appsv1.DeploymentSpec{
@@ -74,6 +81,9 @@ func (r *ReconcileWebproject) deploymentForWebproject(cr *wp.WebProject) *appsv1
 
 }
 
+// backupServiceForWebproject - service responsible for exposing port 3306 for mysql|mariadb container in pod.
+// This service is used by the backup cronjob.
+// TODO: Determine if we should use network security policy to restrict access to this service.
 func (r *ReconcileWebproject) backupServiceForWebproject(cr *wp.WebProject) *corev1.Service {
 	matchlabels := map[string]string{
 		"app.kubernetes.io/name": cr.Name,
@@ -84,7 +94,7 @@ func (r *ReconcileWebproject) backupServiceForWebproject(cr *wp.WebProject) *cor
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "backup-svc"),
 			Namespace: cr.Namespace,
-			Labels:    labels(cr, "service"),
+			Labels:    webprojectlabels(cr, "service"),
 		},
 
 		Spec: corev1.ServiceSpec{
@@ -110,6 +120,7 @@ func (r *ReconcileWebproject) backupServiceForWebproject(cr *wp.WebProject) *cor
 
 }
 
+// serviceForWebproject - service responsible for exposing port 80 of the webcontainer in pod.
 func (r *ReconcileWebproject) serviceForWebproject(cr *wp.WebProject) *corev1.Service {
 	matchlabels := map[string]string{
 		"app.kubernetes.io/name": cr.Name,
@@ -120,7 +131,7 @@ func (r *ReconcileWebproject) serviceForWebproject(cr *wp.WebProject) *corev1.Se
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "svc"),
 			Namespace: cr.Namespace,
-			Labels:    labels(cr, "service"),
+			Labels:    webprojectlabels(cr, "service"),
 		},
 
 		Spec: corev1.ServiceSpec{
@@ -146,78 +157,114 @@ func (r *ReconcileWebproject) serviceForWebproject(cr *wp.WebProject) *corev1.Se
 
 }
 
-// configMapForWebproject returns a webproject configmap object
+// configMapForWebproject - configmap that contains the mysql|mariadb user and database variables.
 func (r *ReconcileWebproject) envConfigMapForWebproject(cr *wp.WebProject) *corev1.ConfigMap {
 
 	dep := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "env-config"),
 			Namespace: cr.Namespace,
-			Labels:    labels(cr, "config"),
+			Labels:    webprojectlabels(cr, "config"),
 		},
 		Data: map[string]string{
 			"MYSQL_USER":     cr.Spec.DatabaseSidecar.DatabaseUser,
 			"MYSQL_DATABASE": cr.Spec.DatabaseSidecar.DatabaseName,
 		},
 	}
-	// Set Operator instance as the owner and controller
+
 	controllerutil.SetControllerReference(cr, dep, r.scheme)
 	return dep
 }
 
-// secretForWebproject returns a webproject configmap object
+// secretForWebproject - secret that contains the password for mysql|mariadb database user.
 func (r *ReconcileWebproject) secretForWebproject(cr *wp.WebProject) *corev1.Secret {
 
 	dep := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "secret"),
 			Namespace: cr.Namespace,
-			Labels:    labels(cr, "config"),
+			Labels:    webprojectlabels(cr, "config"),
 		},
 		Data: map[string][]byte{
 			"MYSQL_PASSWORD": []byte(cr.Spec.DatabaseSidecar.DatabaseUserPassword),
 		},
 	}
-	// Set Operator instance as the owner and controller
+
 	controllerutil.SetControllerReference(cr, dep, r.scheme)
 	return dep
 }
 
-// commonConfigMapForWebproject returns a webproject configmap object
+// commonConfigMapForWebproject - configmap that contains the script code for initcontainer.
+func (r *ReconcileWebproject) webcontainerCronJobConfigMapForWebproject(cr *wp.WebProject) *corev1.ConfigMap {
+
+	dep := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workloadName(cr, "web-container-cron"),
+			Namespace: cr.Namespace,
+			Labels:    webprojectlabels(cr, "config"),
+		},
+		Data: map[string]string{
+			"init-container.sh": cr.Spec.InitContainerScript,
+		},
+	}
+
+	controllerutil.SetControllerReference(cr, dep, r.scheme)
+	return dep
+}
+
+// commonConfigMapForWebproject - configmap that contains the script code for initcontainer.
+func (r *ReconcileWebproject) databaseSidecarCronJobConfigMapForWebproject(cr *wp.WebProject) *corev1.ConfigMap {
+
+	dep := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workloadName(cr, "database-container-cron"),
+			Namespace: cr.Namespace,
+			Labels:    webprojectlabels(cr, "config"),
+		},
+		Data: map[string]string{
+			"init-container.sh": cr.Spec.InitContainerScript,
+		},
+	}
+
+	controllerutil.SetControllerReference(cr, dep, r.scheme)
+	return dep
+}
+
+// commonConfigMapForWebproject - configmap that contains the script code for initcontainer.
 func (r *ReconcileWebproject) initContainerConfigMapForWebproject(cr *wp.WebProject) *corev1.ConfigMap {
 
 	dep := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "init-container"),
 			Namespace: cr.Namespace,
-			Labels:    labels(cr, "config"),
+			Labels:    webprojectlabels(cr, "config"),
 		},
 		Data: map[string]string{
 			"init-container.sh": cr.Spec.InitContainerScript,
 		},
 	}
-	// Set Operator instance as the owner and controller
+
 	controllerutil.SetControllerReference(cr, dep, r.scheme)
 	return dep
 }
 
-// commonConfigMapForWebproject returns a webproject configmap object
+// commonConfigMapForWebproject - configmap that contains common environment variables defined for webproject.
 func (r *ReconcileWebproject) commonConfigMapForWebproject(cr *wp.WebProject) *corev1.ConfigMap {
 
 	dep := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "common-config"),
 			Namespace: cr.Namespace,
-			Labels:    labels(cr, "config"),
+			Labels:    webprojectlabels(cr, "config"),
 		},
 		Data: cr.Spec.CommonConfig,
 	}
-	// Set Operator instance as the owner and controller
+
 	controllerutil.SetControllerReference(cr, dep, r.scheme)
 	return dep
 }
 
-// ingressForWebproject returns a webproject Ingress object
+// ingressForWebproject - ingress object containing the domains for the webproject.
 func (r *ReconcileWebproject) ingressForWebproject(cr *wp.WebProject) *networkingv1beta1.Ingress {
 
 	ingressPaths := []networkingv1beta1.HTTPIngressPath{
@@ -245,7 +292,7 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wp.WebProject) *networkin
 	ingress := &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        workloadName(cr, "ingress"),
-			Labels:      labels(cr, "ingress"),
+			Labels:      webprojectlabels(cr, "ingress"),
 			Namespace:   cr.Namespace,
 			Annotations: cr.Spec.IngressAnnotations,
 		},
@@ -265,19 +312,19 @@ func (r *ReconcileWebproject) ingressForWebproject(cr *wp.WebProject) *networkin
 		)
 	}
 
-	// Set Operator instance as the owner and controller
 	controllerutil.SetControllerReference(cr, ingress, r.scheme)
 	return ingress
 }
 
 // pvcForWebproject - persistent volume claim for static files.
+// TODO: add support to create VolumeSnapshot from current pvc and use that PVC for webproject
 func (r *ReconcileWebproject) pvcForWebproject(cr *wp.WebProject) *corev1.PersistentVolumeClaim {
 	pvc := &corev1.PersistentVolumeClaim{
 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "files"),
 			Namespace: cr.Namespace,
-			Labels:    labels(cr, "storage"),
+			Labels:    webprojectlabels(cr, "storage"),
 		},
 
 		Spec: corev1.PersistentVolumeClaimSpec{
@@ -296,7 +343,6 @@ func (r *ReconcileWebproject) pvcForWebproject(cr *wp.WebProject) *corev1.Persis
 
 	controllerutil.SetControllerReference(cr, pvc, r.scheme)
 	return pvc
-
 }
 
 // pvcForMysql - persistent volume claim for mysql|mariadb data path /var/lib/mysql
@@ -307,7 +353,7 @@ func (r *ReconcileWebproject) pvcForMysql(cr *wp.WebProject) *corev1.PersistentV
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "data"),
 			Namespace: cr.Namespace,
-			Labels:    labels(cr, "storage"),
+			Labels:    webprojectlabels(cr, "storage"),
 		},
 
 		Spec: corev1.PersistentVolumeClaimSpec{
@@ -326,7 +372,6 @@ func (r *ReconcileWebproject) pvcForMysql(cr *wp.WebProject) *corev1.PersistentV
 
 	controllerutil.SetControllerReference(cr, pvc, r.scheme)
 	return pvc
-
 }
 
 // webProjectPodSpect - pod for webproject with multiple sidecars.
@@ -358,8 +403,8 @@ func webProjectPodSpec(cr *wp.WebProject) corev1.PodSpec {
 	}
 
 	// TODO:
-	// - append the initcontainer if the awssecret is not empty.
-	// - append volume for aws secret
+	// - append the initcontainer if initcontainer.enabled.
+	// - append volume aws secret is enabled.
 
 	if cr.Spec.AWSSecretName != "" {
 		webpod.InitContainers = append(webpod.InitContainers, corev1.Container{
@@ -409,6 +454,7 @@ func webProjectPodSpec(cr *wp.WebProject) corev1.PodSpec {
 		})
 		webpod.Volumes = append(webpod.Volumes, corev1.Volume{})
 	}
+
 	// append database sidecar
 	if cr.Spec.DatabaseSidecar.Enabled {
 		webpod.Containers = append(webpod.Containers, databaseContainerSpec(cr))
@@ -429,11 +475,18 @@ func webProjectPodSpec(cr *wp.WebProject) corev1.PodSpec {
 	}
 
 	// append cache sidecar
+	// cache engines supported: memcached and redis
 	if cr.Spec.CacheSidecar.Enabled {
-		webpod.Containers = append(webpod.Containers, cacheContainerSpec(cr))
+		if cr.Spec.CacheSidecar.Engine == "memcached" {
+			webpod.Containers = append(webpod.Containers, memcachedCacheContainerSpec(cr))
+
+		} else if cr.Spec.CacheSidecar.Engine == "redis" {
+			webpod.Containers = append(webpod.Containers, redisCacheContainerSpec(cr))
+		}
 	}
 
 	// append search sidecar
+	// search engines supported: solr and elasticsearch
 	if cr.Spec.SearchSidecar.Enabled {
 		if cr.Spec.SearchSidecar.Engine == "es" {
 			webpod.Containers = append(webpod.Containers, elasticSearchContainerSpec(cr))
@@ -453,7 +506,7 @@ func webProjectPodSpec(cr *wp.WebProject) corev1.PodSpec {
 }
 
 // labels - labels used on all objects.
-func labels(cr *wp.WebProject, component string) map[string]string {
+func webprojectlabels(cr *wp.WebProject, component string) map[string]string {
 	return map[string]string{
 		"app.kubernetes.io/name":      cr.Name,
 		"app.kubernetes.io/part-of":   cr.Spec.ReleaseName,
@@ -465,6 +518,7 @@ func labels(cr *wp.WebProject, component string) map[string]string {
 }
 
 // webContainerSpec - primary contianer for webproject
+// Add support for StartupProbe
 func webContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.WebContainer.Image,
@@ -582,10 +636,24 @@ func webContainerSpec(cr *wp.WebProject) corev1.Container {
 			},
 		})
 	}
+
+	// append search env var.
+	if cr.Spec.SearchSidecar.Enabled {
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name: "SEARCH_HOST",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		})
+	}
+
 	return container
 }
 
 // cliContainerSpec - cli sidecar
+// Add support for StartupProbe
 func cliContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.CLISidecar.Image,
@@ -643,10 +711,23 @@ func cliContainerSpec(cr *wp.WebProject) corev1.Container {
 		})
 	}
 
+	// append search env var.
+	if cr.Spec.SearchSidecar.Enabled {
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name: "SEARCH_HOST",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		})
+	}
+
 	return container
 }
 
 // databaseContainerSpec - database sidecar
+// Add support for StartupProbe
 func databaseContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.DatabaseSidecar.DatabaseImage,
@@ -691,14 +772,14 @@ func databaseContainerSpec(cr *wp.WebProject) corev1.Container {
 	return container
 }
 
-// cacheContainerSpec - cache sidecar (memcached or redis)
-func cacheContainerSpec(cr *wp.WebProject) corev1.Container {
+// memcachedCacheContainerSpec - cache sidecar (memcached or redis)
+func memcachedCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.CacheSidecar.Image,
 		Name:  "cache",
 		Ports: []corev1.ContainerPort{{
-			ContainerPort: int32(cr.Spec.CacheSidecar.Port),
-			Name:          "cache-port",
+			ContainerPort: int32(11211),
+			Name:          "memcached",
 		}},
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: createBool(false),
@@ -710,8 +791,31 @@ func cacheContainerSpec(cr *wp.WebProject) corev1.Container {
 	return container
 }
 
-// solrSearchContainerSpec - search sidecar
-// TODO: create service giving access to solr admin
+// redisCacheContainerSpec - cache sidecar (memcached or redis)
+// Add support for StartupProbe
+func redisCacheContainerSpec(cr *wp.WebProject) corev1.Container {
+	container := corev1.Container{
+		Image: cr.Spec.CacheSidecar.Image,
+		Name:  "cache",
+		Ports: []corev1.ContainerPort{{
+			ContainerPort: int32(6379),
+			Name:          "redis",
+		}},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: createBool(false),
+			ReadOnlyRootFilesystem:   createBool(false),
+			RunAsNonRoot:             createBool(false),
+		},
+	}
+
+	return container
+}
+
+// solrSearchContainerSpec - Solr search sidecar
+// TODO: create service + ingress giving access to solr admin
+// Add configmap to bring in config.
+// Add support for StartupProbe.
+// Add support for PVC
 func solrSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.SearchSidecar.Image,
@@ -730,7 +834,10 @@ func solrSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 	return container
 }
 
-// elasticSearchContainerSpec - search sidecar
+// elasticSearchContainerSpec - ElasticSearch sidecar
+// Add support for StartupProbe.
+// TODO: Add support for PVC
+// Use for logging solution for webproject. fluentbit sidecar + kibania
 func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.SearchSidecar.Image,
@@ -780,19 +887,17 @@ func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 	return container
 }
 
+// backupCronJob - responsible for backing up the database to a remote storage solution.
 func (r *ReconcileWebproject) backupCronJob(cr *wp.WebProject) *v1beta1.CronJob {
-	hostname := workloadName(cr, "backup-svc") + "." + cr.Namespace
-
 	// TODO:
 	// - Add configmap that contains the script to backup the database
 	// - Add DB_HOST to ENV workloadName(cr, "backup-svc") + "." + cr.Namespace
-	backupCommand := "echo 'Starting DB Backup'  &&  mysql --version &&  mysqlshow -h '" + hostname + "' -u$MYSQL_USER -p$MYSQL_PASSWORD && mysqldump -h '" + hostname +
-		"' --opt $MYSQL_DATABASE > /var/lib/mysql/database-backup-drupal_db.sql -uroot -p$MYSQL_ROOT_PASSWORD && cd /var/lib/mysql/ && gzip database-backup-drupal_db.sql && ls -ltr /var/lib/mysql/"
+	backupCommand := "echo 'Starting DB Backup'  &&  mysql --version &&  mysqlshow -h$DATABASE_HOST -u$MYSQL_USER -p$MYSQL_PASSWORD && mysqldump -h$DATABASE_HOST --opt $MYSQL_DATABASE > /var/lib/mysql/database-backup-drupal_db.sql -uroot -p$MYSQL_ROOT_PASSWORD && cd /var/lib/mysql/ && gzip database-backup-drupal_db.sql && ls -ltr /var/lib/mysql/"
 	cron := &v1beta1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
 			Namespace: cr.Namespace,
-			Labels:    labels(cr, "backup"),
+			Labels:    webprojectlabels(cr, "backup"),
 		},
 		Spec: v1beta1.CronJobSpec{
 			Schedule: cr.Spec.DatabaseSidecar.Backup.BackupSchedule,
@@ -837,6 +942,10 @@ func (r *ReconcileWebproject) backupCronJob(cr *wp.WebProject) *v1beta1.CronJob 
 											Name:  "MYSQL_PASSWORD",
 											Value: cr.Spec.DatabaseSidecar.DatabaseUserPassword,
 										},
+										{
+											Name:  "DATABASE_HOST",
+											Value: workloadName(cr, "backup-svc") + "." + cr.Namespace,
+										},
 									},
 								},
 							},
@@ -849,6 +958,18 @@ func (r *ReconcileWebproject) backupCronJob(cr *wp.WebProject) *v1beta1.CronJob 
 	}
 
 	controllerutil.SetControllerReference(cr, cron, r.scheme)
+	return cron
+}
+
+// webContainerCronJob - cronjob that will execute a script in webcontainer if enabled
+func (r *ReconcileWebproject) webContainerCronJob(cr *wp.WebProject) *v1beta1.CronJob {
+	cron := &v1beta1.CronJob{}
+	return cron
+}
+
+// searchContainerCronJob - cronjob that will execute a script in searchcontainer if enabled
+func (r *ReconcileWebproject) searchContainerCronJob(cr *wp.WebProject) *v1beta1.CronJob {
+	cron := &v1beta1.CronJob{}
 	return cron
 }
 
