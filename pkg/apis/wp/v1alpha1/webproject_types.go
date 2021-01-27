@@ -20,36 +20,36 @@ import (
 
 // WebProjectSpec defines the desired state of WebProject
 type WebProjectSpec struct {
-	AWSSecretName         string                    `json:"awssecretname,omitempty"`
+	AWSSecretName         string                    `json:"awsSecretName,omitempty"`
 	Backup                WebProjectBackup          `json:"backup,omitempty"`
-	CLISidecar            WebProjectCLISidecar      `json:"clisidecar,omitempty"`
-	CacheSidecar          WebProjectCacheSidecar    `json:"cachesidecar,omitempty"`
-	DatabaseSidecar       WebProjectDatabaseSidecar `json:"databasesidecar,omitempty"`
-	DockerConfig          WebProjectDockerConfig    `json:"dockerconfig,omitempty"`
-	FileStorageSize       string                    `json:"filestoragesize"`
-	FileStorageMountPath  string                    `json:"filestoragemountpath"`
-	InitContainerScript   string                    `json:"initcontainerscript,omitempty"`
-	IngressHosts          []string                  `json:"ingresshosts,omitempty"`
-	DeploymentAnnotations map[string]string         `json:"deploymentannotations,omitempty"`
-	IngressAnnotations    map[string]string         `json:"ingressannotations,omitempty"`
-	ProjectDomainName     string                    `json:"projectdomainname"`
-	ProjectName           string                    `json:"projectname"`
-	ReleaseName           string                    `json:"releasename"`
-	SearchSidecar         WebProjectSearchSidecar   `json:"searchsidecar,omitempty"`
-	WebContainer          WebProjectWebContainer    `json:"webcontainer"`
-	CommonConfig          map[string]string         `json:"commonconfig"`
+	CLISidecar            WebProjectCLISidecar      `json:"cliSidecar,omitempty"`
+	CacheSidecar          WebProjectCacheSidecar    `json:"cacheSidecar,omitempty"`
+	DatabaseSidecar       WebProjectDatabaseSidecar `json:"databaseSidecar,omitempty"`
+	ImagePullSecrets      WebProjectImagePullSecret `json:"imagePullSecrets,omitempty"`
+	FileStorageSize       string                    `json:"fileStorageSize"`
+	FileStorageMountPath  string                    `json:"fileStorageMountPath"`
+	InitContainerScript   string                    `json:"initContainerScript,omitempty"`
+	IngressHosts          []string                  `json:"ingressHosts,omitempty"`
+	DeploymentAnnotations map[string]string         `json:"deploymentAnnotations,omitempty"`
+	IngressAnnotations    map[string]string         `json:"ingressAnnotations,omitempty"`
+	ProjectDomainName     string                    `json:"projectDomainName"`
+	ProjectName           string                    `json:"projectName"`
+	ReleaseName           string                    `json:"releaseName"`
+	SearchSidecar         WebProjectSearchSidecar   `json:"searchSidecar,omitempty"`
+	WebContainer          WebProjectWebContainer    `json:"webContainer"`
+	CommonConfig          map[string]string         `json:"commonConfig"`
 }
 
 // WebProjectWebContainer defines to spec for webcontainer
 type WebProjectWebContainer struct {
 	Image   string            `json:"image"`
-	CronJob WebProjectCronJob `json:"cronjob,omitempty"`
+	CronJob WebProjectCronJob `json:"cronJob,omitempty"`
 }
 
 // WebProjectDockerConfig defines setup ImagePullSecret for private registry.
-type WebProjectDockerConfig struct {
+type WebProjectImagePullSecret struct {
 	Enabled    bool   `json:"enabled"`
-	Secretname string `json:"secretname,omitempty"`
+	Secretname string `json:"secretName,omitempty"`
 }
 
 // WebProjectCronJob defines setup for cronjobs.
@@ -64,7 +64,7 @@ type WebProjectCacheSidecar struct {
 	Enabled bool              `json:"enabled"`
 	Engine  string            `json:"engine,omitempty"`
 	Image   string            `json:"image,omitempty"`
-	CronJob WebProjectCronJob `json:"cronjob,omitempty"`
+	CronJob WebProjectCronJob `json:"cronJob,omitempty"`
 }
 
 // WebProjectCLISidecar defines spec for cache sidecar
@@ -84,22 +84,22 @@ type WebProjectSearchSidecar struct {
 // WebProjectDatabaseSidecar defines the desired state for database sidecar
 type WebProjectDatabaseSidecar struct {
 	Enabled                bool              `json:"enabled,omitempty"`
-	DatabaseName           string            `json:"databasename,omitempty"`
-	DatabaseImage          string            `json:"databaseimage,omitempty"`
-	DatabaseUser           string            `json:"databaseuser,omitempty"`
-	DatabaseStorageSize    string            `json:"databasestoragesize,omitempty"`
-	DatabaseRootPassword   string            `json:"databaserootpassword,omitempty"`
-	DatabaseStoreMountPath string            `json:"databasestoragemountpath,omitempty"`
-	DatabaseUserPassword   string            `json:"databaseuserpassword,omitempty"`
-	CronJob                WebProjectCronJob `json:"cronjob,omitempty"`
+	DatabaseName           string            `json:"databaseName,omitempty"`
+	DatabaseImage          string            `json:"databaseImage,omitempty"`
+	DatabaseUser           string            `json:"databaseUser,omitempty"`
+	DatabaseStorageSize    string            `json:"databaseStorageSize,omitempty"`
+	DatabaseRootPassword   string            `json:"databaseRootPassword,omitempty"`
+	DatabaseStoreMountPath string            `json:"databaseStorageMountPath,omitempty"`
+	DatabaseUserPassword   string            `json:"databaseUserPassword,omitempty"`
+	CronJob                WebProjectCronJob `json:"cronJob,omitempty"`
 	Backup                 WebProjectBackup  `json:"backup,omitempty"`
 }
 
 // WebProjectBackup defined the spec for backups.
 type WebProjectBackup struct {
 	Enabled         bool   `json:"enabled,omitempty"`
-	StorageProvider string `json:"storageprovider,omitempty"`
-	BackupSchedule  string `json:"backupschedule"`
+	StorageProvider string `json:"storageProvider,omitempty"`
+	BackupSchedule  string `json:"backupSchedule"`
 }
 
 // WebProjectStatus defines the observed state of WebProject
@@ -108,9 +108,11 @@ type WebProjectStatus struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 	// WebProject WebProjectSpec `json:"webproject,omitempty"`
-	PodNames       []string `json:"podNames"`
-	ConfigMapNames []string `json:"configmapNames"`
-	SecretNames    []string `json:"secretNames"`
+	PodNames        []string `json:"podNames"`
+	ConfigMapNames  []string `json:"configMapNames"`
+	SecretNames     []string `json:"secretNames"`
+	DeploymentNames []string `json:"deploymentNames"`
+	CronJobNames    []string `json:"cronJobNames"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

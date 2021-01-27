@@ -8,10 +8,10 @@ metadata:
     app.kubernetes.io/instance: developer-cthorn
 spec:
   # Project information
-  projectname: developer-cthorn
-  projectdomainname: developer-cthorn.kube.domain.tld
+  projectName: developer-cthorn
+  projectDomainName: developer-cthorn.kube.domain.tld
 
-  deploymentannotations:
+  deploymentAnnotations:
     "project-lead": "developer-name"
     "project-lead-email": "developer-name@domain.tld"
     "project-language": "lang"
@@ -19,15 +19,15 @@ spec:
   # AWS secret name
 
   # RELEASE_NAME
-  releasename: developer-cthorn
+  releaseName: developer-cthorn
 
   # default web image
   # nginx:1.19.4
   # httpd:2.4.46-alpine
   # php:7.4.14-apache-buster
-  webcontainer:
+  webContainer:
     image: php:8.0.1-apache-buster
-    cronjob:
+    cronJob:
       enabled: false
       schedule: "0 * * * *"
       script: |-
@@ -37,7 +37,7 @@ spec:
   # Sidecar Containers
 
   # cli sidecar image
-  clisidecar:
+  cliSidecar:
     enabled: true
     image: outrigger/cli:2-php7.3
 
@@ -48,7 +48,7 @@ spec:
   #  https://opensenselabs.com/blog/tech/use-elastic-search-indexing-drupal
   #  config-path: admin/config/search/elasticsearch-connector
   #  serverUrl: SEARCH_HOST (localhost:9200)
-  searchsidecar:
+  searchSidecar:
     enabled: true
     # es|solr
     engine: es
@@ -64,16 +64,16 @@ spec:
   # database sidecar image
   # mysql:5.6.51
   # mariadb:10.5.8
-  databasesidecar:
+  databaseSidecar:
     enabled: true
-    databasename: drupal_db
-    databaseimage: mysql:5.6.51
-    databaseuser: admin
-    databaseuserpassword: admin123
-    databasestoragesize: 2Gi
-    databaserootpassword: rootpasswd123
-    databasestoragemountpath: /var/lib/mysql
-    cronjob:
+    databaseName: drupal_db
+    databaseImage: mysql:5.6.51
+    databaseUser: admin
+    databaseUserPassword: admin123
+    databaseStorageSize: 2Gi
+    databaseRootPassword: rootpasswd123
+    databaseStorageMountPath: /var/lib/mysql
+    cronJob:
       enabled: false
       schedule: "0 * * * *"
       script: |-
@@ -81,7 +81,7 @@ spec:
         echo "databasesidecar cronjob script"
     # Perform backups to aws or gcp bucket
     backup:
-      enabled: false
+      enabled: true
       # aws, gcp
       provider: aws
 
@@ -97,31 +97,31 @@ spec:
       # gcp
       # GCS_SERVICE_ACCOUNT_JSON_KEY: ?
       # GCS_PROJECT_ID: ?
-      backupsecretname: backup-secret
-      backupschedule: "0 * * * *"
-      backupscheduledjobshistorylimit: 10
+      backupSecretName: backup-secret
+      backupSchedule: "0 * * * *"
+      backupScheduledJobsHistorylimit: 10
 
 
   # cache sidecar image
   # memcached:1.6.9
   # redis
-  cachesidecar:
+  cacheSidecar:
     enabled: true
     # cache engine: memcached or redis
     engine: memcached
     image: memcached:1.6.9
 
   # file storege size and mountpath
-  filestoragesize: 10Gi
-  filestoragemountpath: /var/www/html/sites/default/files
+  fileStorageSize: 10Gi
+  fileStorageMountPath: /var/www/html/sites/default/files
 
-  # docker config information
-  dockerconfig:
+  # imagepullsecrets config information
+  imagePullSecrets:
     enabled: true
-    secretname: dockersecret
+    secretName: dockersecret
 
   # Ingress domains
-  ingresshosts:
+  ingressHosts:
     - domainone
     - domaintwo
     - domainthree
@@ -139,14 +139,14 @@ spec:
   # Add support for rewriting of target - "nginx.ingress.kubernetes.io/rewrite-target":    "/$2",
   # Add nginx.ingress.kubernetes.io/auth-tls-verify-client: "off" and nginx.ingress.kubernetes.io/backend-protocol: HTTPS
   # if the project is using custom certs. (i.e. gatsby)
-  ingressannotations:
+  ingressAnnotations:
     "kubernetes.io/ingress.class": "nginx"
     "nginx.ingress.kubernetes.io/proxy-body-size": "0"
     "nginx.ingress.kubernetes.io/proxy-buffer-size": "16k"
     "nginx.ingress.kubernetes.io/ssl-passthrough": "true"
 
   # initcontainer script
-  initcontainerscript: |-
+  initContainerScript: |-
     #!/bin/bash
     # Hello cthorn
     set +x;
@@ -161,7 +161,7 @@ spec:
 
   # common configmap
   # required
-  commonconfig:
+  commonConfig:
    "BUILD_ID": "1234567890"
    "DOCROOT": "/var/www/docroot"
    "PROJECT_ENV": "project"

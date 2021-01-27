@@ -262,35 +262,37 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
+	// ensureCronJob - manage backups for database.
+	result, err = r.ensureWebContainerCronJob(request, webproject, r.webContainerCronJob(webproject))
+	if result != nil {
+		return *result, err
+	}
+
+	// ensureCronJob - manage backups for database.
+	result, err = r.ensureSearchContainerCronJob(request, webproject, r.searchContainerCronJob(webproject))
+	if result != nil {
+		return *result, err
+	}
+
+	// ensureCronJob - manage backups for database.
+	result, err = r.ensureDatabaseContainerCronJob(request, webproject, r.databaseContainerCronJob(webproject))
+	if result != nil {
+		return *result, err
+	}
+
 	// updateWebProjectStatus
 	// TODO: list each object name within webproject.
-	// err = r.updateWebProjectStatus(webproject)
 	WebProject := webproject
-	podList := &corev1.PodList{}
-	configmapList := &corev1.ConfigMapList{}
-	secretsList := &corev1.SecretList{}
 
 	lbs := map[string]string{
 		"app.kubernetes.io/name": webproject.Name,
 	}
+
 	labelSelector := labels.SelectorFromSet(lbs)
 	listOps := &client.ListOptions{Namespace: webproject.Namespace, LabelSelector: labelSelector}
 
+	podList := &corev1.PodList{}
 	if err = r.client.List(context.TODO(), podList, listOps); err != nil {
-		return reconcile.Result{}, err
-	}
-	if err != nil {
-		// Requeue the request if the status could not be updated
-		return reconcile.Result{}, err
-	}
-	if err = r.client.List(context.TODO(), configmapList, listOps); err != nil {
-		return reconcile.Result{}, err
-	}
-	if err != nil {
-		// Requeue the request if the status could not be updated
-		return reconcile.Result{}, err
-	}
-	if err = r.client.List(context.TODO(), secretsList, listOps); err != nil {
 		return reconcile.Result{}, err
 	}
 	if err != nil {
@@ -309,37 +311,103 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		}
 	}
 
+	// List of pods
 	availableNames := []string{}
 	for _, pod := range available {
 		availableNames = append(availableNames, pod.ObjectMeta.Name)
 	}
 
 	// get configMaps owned by this workload.
+	configmapList := &corev1.ConfigMapList{}
+	if err = r.client.List(context.TODO(), configmapList, listOps); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err != nil {
+		// Requeue the request if the status could not be updated
+		return reconcile.Result{}, err
+	}
+
 	var configmapAvailable []corev1.ConfigMap
-	configmapNames := []string{}
 	for _, configmap := range configmapList.Items {
 		configmapAvailable = append(configmapAvailable, configmap)
 	}
 
+	// List of configMaps
+	configmapNames := []string{}
 	for _, configmap := range configmapAvailable {
 		configmapNames = append(configmapNames, configmap.ObjectMeta.Name)
 	}
 
-	// get configMaps owned by this workload.
+	// Get secrets owned by this webproject
+	secretsList := &corev1.SecretList{}
+	if err = r.client.List(context.TODO(), secretsList, listOps); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err != nil {
+		// Requeue the request if the status could not be updated
+		return reconcile.Result{}, err
+	}
+
+	// get secrets owned by this workload.
 	var secretsAvailable []corev1.Secret
-	secretsNames := []string{}
 	for _, secret := range secretsList.Items {
 		secretsAvailable = append(secretsAvailable, secret)
 	}
 
+	// List of Secrets
+	secretsNames := []string{}
 	for _, secret := range secretsAvailable {
-		secretsNames = append(configmapNames, secret.ObjectMeta.Name)
+		secretsNames = append(secretsNames, secret.ObjectMeta.Name)
+	}
+
+	// Get deployments owned by this webproject
+	deploymentsList := &appsv1.DeploymentList{}
+	if err = r.client.List(context.TODO(), deploymentsList, listOps); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err != nil {
+		// Requeue the request if the status could not be updated
+		return reconcile.Result{}, err
+	}
+
+	var deploymentsAvailable []appsv1.Deployment
+	for _, deployment := range deploymentsList.Items {
+		deploymentsAvailable = append(deploymentsAvailable, deployment)
+	}
+
+	// List of Deployments
+	deploymentsNames := []string{}
+	for _, deployment := range deploymentsAvailable {
+		deploymentsNames = append(deploymentsNames, deployment.ObjectMeta.Name)
+	}
+
+	// Get deployments owned by this webproject
+	cronjobList := &v1beta1.CronJobList{}
+	if err = r.client.List(context.TODO(), cronjobList, listOps); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err != nil {
+		// Requeue the request if the status could not be updated
+		return reconcile.Result{}, err
+	}
+
+	var cronjobAvailable []v1beta1.CronJob
+	for _, cronjob := range cronjobList.Items {
+		cronjobAvailable = append(cronjobAvailable, cronjob)
+	}
+
+	// List of Deployments
+	cronjobNames := []string{}
+	for _, cronjob := range cronjobAvailable {
+		cronjobNames = append(cronjobNames, cronjob.ObjectMeta.Name)
 	}
 	// Update the status if necessary
 	status := wp.WebProjectStatus{
-		PodNames:       availableNames,
-		ConfigMapNames: configmapNames,
-		SecretNames:    secretsNames,
+		ConfigMapNames:  configmapNames,
+		CronJobNames:    cronjobNames,
+		DeploymentNames: deploymentsNames,
+		PodNames:        availableNames,
+		SecretNames:     secretsNames,
 	}
 
 	WebProject.Status = status
