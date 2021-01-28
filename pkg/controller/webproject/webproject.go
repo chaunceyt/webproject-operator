@@ -118,6 +118,42 @@ func (r *ReconcileWebproject) backupServiceForWebproject(cr *wp.WebProject) *cor
 
 }
 
+func (r *ReconcileWebproject) solrServiceForWebproject(cr *wp.WebProject) *corev1.Service {
+	matchlabels := map[string]string{
+		"app.kubernetes.io/name": cr.Name,
+	}
+
+	service := &corev1.Service{
+
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workloadName(cr, "solr-svc"),
+			Namespace: cr.Namespace,
+			Labels:    webprojectlabels(cr, "service"),
+		},
+
+		Spec: corev1.ServiceSpec{
+			Selector: matchlabels,
+
+			Ports: []corev1.ServicePort{
+				{
+					Port: 8983,
+					TargetPort: intstr.IntOrString{
+						Type:   Int,
+						IntVal: 8983,
+					},
+					Protocol: "TCP",
+					Name:     "solr-port",
+				},
+			},
+			Type: corev1.ServiceTypeClusterIP,
+		},
+	}
+
+	controllerutil.SetControllerReference(cr, service, r.scheme)
+	return service
+
+}
+
 // serviceForWebproject - service responsible for exposing port 80 of the webcontainer in pod.
 func (r *ReconcileWebproject) serviceForWebproject(cr *wp.WebProject) *corev1.Service {
 	matchlabels := map[string]string{

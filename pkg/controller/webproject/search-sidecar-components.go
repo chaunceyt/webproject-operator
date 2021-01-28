@@ -6,10 +6,11 @@ import (
 )
 
 // solrSearchContainerSpec - Solr search sidecar
-// TODO: create service + ingress giving access to solr admin
-// Add configmap to bring in config.
-// Add support for StartupProbe.
-// Add support for PVC
+// TODO:
+// - Create service + ingress giving access to solr admin
+// - Add support for StartupProbe.
+// - Add config option for name of configmap containing solr config.
+// - Add support for PVC
 func solrSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.SearchSidecar.Image,
@@ -29,9 +30,10 @@ func solrSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 }
 
 // elasticSearchContainerSpec - ElasticSearch sidecar
-// Add support for StartupProbe.
-// TODO: Add support for PVC
-// Use for logging solution for webproject. fluentbit sidecar + kibania
+// TODO:
+// - Add support for PVC
+// - Add support for StartupProbe.
+// - Use for logging solution for webproject. (fluentbit sidecar + kibania)
 func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.SearchSidecar.Image,

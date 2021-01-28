@@ -38,6 +38,8 @@ spec:
               properties:
                 backupSchedule:
                   type: string
+                backupScheduledJobsHistorylimit:
+                  type: integer
                 enabled:
                   type: boolean
                 storageProvider:
@@ -97,6 +99,8 @@ spec:
                   properties:
                     backupSchedule:
                       type: string
+                    backupScheduledJobsHistorylimit:
+                      type: integer
                     enabled:
                       type: boolean
                     storageProvider:
@@ -173,6 +177,20 @@ spec:
             searchSidecar:
               description: WebProjectSearchSidecar defines spec for cache sidecar
               properties:
+                cronJob:
+                  description: WebProjectCronJob defines setup for cronjobs.
+                  properties:
+                    enabled:
+                      type: boolean
+                    schedule:
+                      type: string
+                    script:
+                      type: string
+                  required:
+                  - enabled
+                  - schedule
+                  - script
+                  type: object
                 enabled:
                   type: boolean
                 engine:

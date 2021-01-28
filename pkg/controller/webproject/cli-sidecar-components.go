@@ -6,7 +6,8 @@ import (
 )
 
 // cliContainerSpec - cli sidecar
-// Add support for StartupProbe
+// TODO
+// - Add support for StartupProbe
 func cliContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.CLISidecar.Image,

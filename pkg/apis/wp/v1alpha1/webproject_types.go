@@ -61,10 +61,10 @@ type WebProjectCronJob struct {
 
 // WebProjectCacheSidecar defines spec for cache sidecar
 type WebProjectCacheSidecar struct {
+	CronJob WebProjectCronJob `json:"cronJob,omitempty"`
 	Enabled bool              `json:"enabled"`
 	Engine  string            `json:"engine,omitempty"`
 	Image   string            `json:"image,omitempty"`
-	CronJob WebProjectCronJob `json:"cronJob,omitempty"`
 }
 
 // WebProjectCLISidecar defines spec for cache sidecar
@@ -76,14 +76,16 @@ type WebProjectCLISidecar struct {
 
 // WebProjectSearchSidecar defines spec for cache sidecar
 type WebProjectSearchSidecar struct {
-	Enabled bool   `json:"enabled"`
-	Engine  string `json:"engine,omitempty"`
-	Image   string `json:"image,omitempty"`
+	CronJob WebProjectCronJob `json:"cronJob,omitempty"`
+	Enabled bool              `json:"enabled"`
+	Engine  string            `json:"engine,omitempty"`
+	Image   string            `json:"image,omitempty"`
 }
 
 // WebProjectDatabaseSidecar defines the desired state for database sidecar
 type WebProjectDatabaseSidecar struct {
-	Enabled                bool              `json:"enabled,omitempty"`
+	Backup                 WebProjectBackup  `json:"backup,omitempty"`
+	CronJob                WebProjectCronJob `json:"cronJob,omitempty"`
 	DatabaseName           string            `json:"databaseName,omitempty"`
 	DatabaseImage          string            `json:"databaseImage,omitempty"`
 	DatabaseUser           string            `json:"databaseUser,omitempty"`
@@ -91,15 +93,15 @@ type WebProjectDatabaseSidecar struct {
 	DatabaseRootPassword   string            `json:"databaseRootPassword,omitempty"`
 	DatabaseStoreMountPath string            `json:"databaseStorageMountPath,omitempty"`
 	DatabaseUserPassword   string            `json:"databaseUserPassword,omitempty"`
-	CronJob                WebProjectCronJob `json:"cronJob,omitempty"`
-	Backup                 WebProjectBackup  `json:"backup,omitempty"`
+	Enabled                bool              `json:"enabled,omitempty"`
 }
 
 // WebProjectBackup defined the spec for backups.
 type WebProjectBackup struct {
-	Enabled         bool   `json:"enabled,omitempty"`
-	StorageProvider string `json:"storageProvider,omitempty"`
-	BackupSchedule  string `json:"backupSchedule"`
+	BackupSchedule                  string `json:"backupSchedule"`
+	BackupScheduledJobsHistorylimit int    `json:"backupScheduledJobsHistorylimit,omitempty"`
+	Enabled                         bool   `json:"enabled,omitempty"`
+	StorageProvider                 string `json:"storageProvider,omitempty"`
 }
 
 // WebProjectStatus defines the observed state of WebProject

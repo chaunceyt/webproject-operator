@@ -6,6 +6,8 @@ import (
 )
 
 // memcachedCacheContainerSpec - cache sidecar (memcached or redis)
+// TODO
+// - Make immutable. (ReadOnlyRootFilesystem: true)
 func memcachedCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.CacheSidecar.Image,
@@ -25,7 +27,9 @@ func memcachedCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 }
 
 // redisCacheContainerSpec - cache sidecar (memcached or redis)
-// Add support for StartupProbe
+// TODO
+// - Make immutable. (ReadOnlyRootFilesystem: true)
+// - Add support for redis.conf via configmap to support auth
 func redisCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.CacheSidecar.Image,

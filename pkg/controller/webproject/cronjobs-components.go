@@ -17,7 +17,6 @@ const (
 func (r *ReconcileWebproject) backupCronJob(cr *wp.WebProject) *v1beta1.CronJob {
 	// TODO:
 	// - Add configmap that contains the script to backup the database
-	// - Add DB_HOST to ENV workloadName(cr, "backup-svc") + "." + cr.Namespace
 	backupCommand := "echo 'Starting DB Backup'  &&  mysql --version &&  mysqlshow -h$DATABASE_HOST -u$MYSQL_USER -p$MYSQL_PASSWORD && mysqldump -h$DATABASE_HOST --opt $MYSQL_DATABASE > /var/lib/mysql/database-backup-drupal_db.sql -uroot -p$MYSQL_ROOT_PASSWORD && cd /var/lib/mysql/ && gzip database-backup-drupal_db.sql && ls -ltr /var/lib/mysql/"
 	cron := &v1beta1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{

@@ -6,7 +6,26 @@ import (
 )
 
 // databaseContainerSpec - database sidecar
-// Add support for StartupProbe
+// pvcForMysql is responsible for the PVC data-storage
+// TODO:
+// - Add support for StartupProbe
+// - Implement backup solution.
+/*
+Backup solution
+
+Storage options
+- pvc
+- AWS s3
+- GCP bucket
+
+pvc
+
+- 2gb PVC default
+- nginx-alpine pod with pvc to backup-volume mounted under docroot.
+- basic auth to download backup
+- use cronjob to run mysqldump of database
+- use kubectl to copy database dump file to pod with backup-volume pvc
+*/
 func databaseContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
 		Image: cr.Spec.DatabaseSidecar.DatabaseImage,

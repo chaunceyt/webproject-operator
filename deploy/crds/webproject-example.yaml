@@ -124,14 +124,6 @@ spec:
   ingressHosts:
     - domainone
     - domaintwo
-    - domainthree
-    - domainfour
-    - domainfive
-    - domainsix
-    - domainseven
-    - domaineight
-    - domainnine
-    - domainten
 
   # Allow webapp to handle ssl redirects - nginx.ingress.kubernetes.io/ssl-redirect: "false"
   # Add auth - nginx.ingress.kubernetes.io/auth-url: https://auth.domain.com/prod/auth

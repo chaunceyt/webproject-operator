@@ -208,16 +208,24 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
-	// ensureSerivce - ensure the k8s service is managed.
+	// ensureSerivce - manage the service for the web container.
 	result, err = r.ensureService(request, webproject, r.serviceForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
-	// ensureSerivce - ensure the k8s service is managed.
+	// ensureSerivce - manage the serivce for database used by the backup routines
 	result, err = r.ensureService(request, webproject, r.backupServiceForWebproject(webproject))
 	if result != nil {
 		return *result, err
+	}
+
+	// ensureSerivce - manage the serivce for Solr used to interact with admin UI.
+	if webproject.Spec.SearchSidecar.Enabled && webproject.Spec.SearchSidecar.Engine == "solr" {
+		result, err = r.ensureService(request, webproject, r.solrServiceForWebproject(webproject))
+		if result != nil {
+			return *result, err
+		}
 	}
 
 	// ensureEnvConfigMap - manage environmental variable config map for webproject.
