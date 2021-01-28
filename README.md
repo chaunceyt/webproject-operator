@@ -1,50 +1,52 @@
 # WebProject Operator
 
-I currently manage a small GKE cluster. This cluster has two types of nodes, builder and worker. The builder nodes run gitlab-runners on `shared` and `project specific` builder node pools. The worker nodes are used by all of the projects using the cluster. Each project gets a namespace and can have a workload per branch. Currently the workload is generated via a custom helm chart, embeded in a "project starter" tool. Keeping the "project starter" and projects that started from the "project starter" in sync introduces some toil.
+The WebProject operator is a Kubernetes Native Operator for managing a development team's testing environment.
 
-After reading this article [Create a Kubernetes Operator in Golang to automatically manage a simple, stateful application](https://developers.redhat.com/blog/2020/12/16/create-a-kubernetes-operator-in-golang-to-automatically-manage-a-simple-stateful-application/) and reviewing this [git repo](https://github.com/priyanka19-98/Wordpress-Operator). I decided to develop this experimental operator to see if I could reduce the toil of maintaining the helm chart.
 
-The Operator is built using the `operator-sdk-v0.15.2` framework to demostrate
+### Purpose
 
-- creating a WebProject kind of resource using Kubernetes controller pattern. 
-- creating a custom controller that encapsulates specific domain/application level knowledge of running mostly Drupal development projects in the cluster.
+I'm the cluster administrator for a multi-tenant GKE cluster. The workloads that runs in this cluster follow the sidecar pattern. Each workload running in the cluster is created after a `git push` of a `bug/feature/issue` branch that triggers a Gitlab pipeline, during the **deploy** stage of the pipeline we use `helm template` to generate the manifests needed to create the Kubernetes workload for the code being tested. This helm chart is introduced via the forking of a "starter kit" when a project is starting sprint zero and defining what components they need for their workloads. There are times when projects who forked "months ago" have a fair amount of drift and keeping the helm chart in sync adds toil.
 
-The Operator manages the following objects.
 
-- Deployment
+After reading this article [Create a Kubernetes Operator in Golang to automatically manage a simple, stateful application](https://developers.redhat.com/blog/2020/12/16/create-a-kubernetes-operator-in-golang-to-automatically-manage-a-simple-stateful-application/) and reviewing this [git repo](https://github.com/priyanka19-98/Wordpress-Operator). I decided to write this operator to better understand the Kubernetes operator pattern, to create an "automated site reliability engineer" for webprojects by removing the toil of maintaining a complex chart across a number of projects.
+
+### What is a webproject?
+
+A managed Kubernetes environment for development teams to test their web applications. 
+
+The core Kubernetes components managed are:
+
+
 - ConfigMaps
-- PersistentVolumeClaim(s)
+- CronJobs
+- Deployment
 - Ingress
-- Service
+- PersistentVolumeClaims
 - Secrets
- 
+- Service
+- Volumesnapshots/Volumecloning (TODO)
 
-## About the kind: Deployment
 
-The deployment object managed by this operator creates a `web` container and a number of other sidecar containers
+The core containers in a webproject pod:
 
-- cli (docksal default)
-- database (mysql, mariadb)
-- cache (memcache, redis)
+- Webcontainer (can be almost anything that listens on port 80)
+- Database sidecar (Mariadb or Mysql)
+- Cache sidecar (Memcached or Redis)
+- CLI container sidecar (same mountpaths as webcontainer)
+- Search sidecar (Solr or ElasticSearch)
 
-## About the kind: PersistentVolumeClaim
 
-The operator manages a pvc for the database `/var/lib/mysql` and static files. i.e. `/var/www/build/html/sites/default/files`
+Managed Cronjobs
 
-## About the kind: Secret
+- Cronjobs for each sidecar (WIP)
+- Backup for database sidecar (WIP)
 
-The operator manages a secret for the `MYSQL_PASSWORD` at the moment.
 
-## About the kind: ConfigMap
 
-The operator manages a configmap for `env` and `common` environment variables and `init-container` script. 
 
-## About the kind: Service
+### Version
 
-The operator manages one service for the webproject.
+- v1alpha1
 
-## About the kind: Ingress
-
-The operator manages one ingress for the webproject. At the moment the pattern only supports one domain per workload.
 
 
