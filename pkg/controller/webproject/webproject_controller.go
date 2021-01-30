@@ -247,15 +247,28 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// ensureWebContainerCronJobConfigMap - manage script configmap
-	result, err = r.ensureWebContainerCronJobConfigMap(request, webproject, r.webcontainerCronJobConfigMapForWebproject(webproject))
-	if result != nil {
-		return *result, err
+	if webproject.Spec.WebContainer.CronJob.Enabled {
+		result, err = r.ensureWebContainerCronJobConfigMap(request, webproject, r.webContainerCronJobConfigMapForWebproject(webproject))
+		if result != nil {
+			return *result, err
+		}
+	}
+
+	// ensureSearchSidecarCronJobConfigMap - manage script configmap
+	if webproject.Spec.SearchSidecar.CronJob.Enabled {
+		result, err = r.ensureSearchSidecarCronJobConfigMap(request, webproject, r.searchSidecarCronJobConfigMapForWebproject(webproject))
+		if result != nil {
+			return *result, err
+		}
+
 	}
 
 	// ensureDatabaseSidecarCronJobConfigMap - manage script configmap
-	result, err = r.ensureDatabaseSidecarCronJobConfigMap(request, webproject, r.databaseSidecarCronJobConfigMapForWebproject(webproject))
-	if result != nil {
-		return *result, err
+	if webproject.Spec.DatabaseSidecar.CronJob.Enabled {
+		result, err = r.ensureDatabaseSidecarCronJobConfigMap(request, webproject, r.databaseSidecarCronJobConfigMapForWebproject(webproject))
+		if result != nil {
+			return *result, err
+		}
 	}
 
 	// ensureSecret - manage secrets for mysql database, etc

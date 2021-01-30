@@ -28,8 +28,8 @@ spec:
   webContainer:
     image: php:8.0.1-apache-buster
     cronJob:
-      enabled: false
-      schedule: "0 * * * *"
+      enabled: true
+      schedule: "*/5 * * * *"
       script: |-
         #!/bin/bash
         echo "webcontainer cronjob script"
@@ -51,15 +51,16 @@ spec:
   searchSidecar:
     enabled: true
     # es|solr
-    engine: es
-    # image: solr:8.7.0
-    image: elasticsearch:7.10.1
-    cronjob:
-      enabled: false
-      schedule: "0 * * * *"
+    engine: solr
+    image: solr:8.7.0
+    #image: elasticsearch:7.10.1
+    cronJob:
+      enabled: true
+      schedule: "*/5 * * * *"
       script: |-
         #!/bin/bash
         echo "searchsidecar cronjob script"
+        hostname && df -h && date
 
   # database sidecar image
   # mysql:5.6.51
@@ -74,11 +75,12 @@ spec:
     databaseRootPassword: rootpasswd123
     databaseStorageMountPath: /var/lib/mysql
     cronJob:
-      enabled: false
-      schedule: "0 * * * *"
+      enabled: true
+      schedule: "*/5 * * * *"
       script: |-
         #!/bin/bash
         echo "databasesidecar cronjob script"
+        hostname && df -h && date
     # Perform backups to aws or gcp bucket
     backup:
       enabled: true

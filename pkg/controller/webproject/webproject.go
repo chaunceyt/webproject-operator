@@ -483,6 +483,20 @@ func webProjectPodSpec(cr *wp.WebProject) corev1.PodSpec {
 				},
 			},
 		})
+
+		if cr.Spec.DatabaseSidecar.CronJob.Enabled {
+			webpod.Volumes = append(webpod.Volumes, corev1.Volume{
+				Name: "database-cron-script",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: workloadName(cr, "database-cron-script"),
+						},
+						DefaultMode: createInt32(0744),
+					},
+				},
+			})
+		}
 	}
 
 	// append cli sidecar
@@ -514,6 +528,35 @@ func webProjectPodSpec(cr *wp.WebProject) corev1.PodSpec {
 			Name: "search-data",
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
+
+		if cr.Spec.SearchSidecar.CronJob.Enabled {
+			webpod.Volumes = append(webpod.Volumes, corev1.Volume{
+				Name: "search-cron-script",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: workloadName(cr, "search-cron-script"),
+						},
+						DefaultMode: createInt32(0744),
+					},
+				},
+			})
+		}
+
+	}
+
+	if cr.Spec.WebContainer.CronJob.Enabled {
+		webpod.Volumes = append(webpod.Volumes, corev1.Volume{
+			Name: "webcontainer-cron-script",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: workloadName(cr, "webcontainer-cron-script"),
+					},
+					DefaultMode: createInt32(0744),
+				},
 			},
 		})
 	}
@@ -662,6 +705,13 @@ func webContainerSpec(cr *wp.WebProject) corev1.Container {
 					FieldPath: "status.podIP",
 				},
 			},
+		})
+	}
+
+	if cr.Spec.WebContainer.CronJob.Enabled {
+		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+			Name:      "webcontainer-cron-script",
+			MountPath: "/opt/script",
 		})
 	}
 

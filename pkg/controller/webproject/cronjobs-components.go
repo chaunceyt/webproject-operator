@@ -86,27 +86,9 @@ func (r *ReconcileWebproject) backupCronJob(cr *wp.WebProject) *v1beta1.CronJob 
 	return cron
 }
 
-// commonConfigMapForWebproject - configmap that contains the script code for initcontainer.
-func (r *ReconcileWebproject) databaseSidecarCronJobConfigMapForWebproject(cr *wp.WebProject) *corev1.ConfigMap {
-
-	dep := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      workloadName(cr, "database-container-cron"),
-			Namespace: cr.Namespace,
-			Labels:    webprojectlabels(cr, "config"),
-		},
-		Data: map[string]string{
-			"script.sh": cr.Spec.InitContainerScript,
-		},
-	}
-
-	controllerutil.SetControllerReference(cr, dep, r.scheme)
-	return dep
-}
-
 // databaseContainerCronJob - cronjob that will execute a script in webcontainer if enabled
 func (r *ReconcileWebproject) databaseContainerCronJob(cr *wp.WebProject) *v1beta1.CronJob {
-	runCommand := "export podName=$(kubectl get po -l app.kubernetes.io/name=" + cr.Name + " -o name | cut -f2 -d/) && kubectl exec $podName -c database -- hostname && df -h && ps axu"
+	runCommand := "export podName=$(kubectl get po -l app.kubernetes.io/name=" + cr.Name + " -o name | cut -f2 -d/) && kubectl exec $podName -c database -- /opt/script/script.sh"
 	cron := &v1beta1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "database-cron"),
@@ -142,7 +124,7 @@ func (r *ReconcileWebproject) databaseContainerCronJob(cr *wp.WebProject) *v1bet
 
 // webContainerCronJob - cronjob that will execute a script in webcontainer if enabled
 func (r *ReconcileWebproject) webContainerCronJob(cr *wp.WebProject) *v1beta1.CronJob {
-	runCommand := "export podName=$(kubectl get po -l app.kubernetes.io/name=" + cr.Name + " -o name | cut -f2 -d/) && kubectl exec $podName -c web -- hostname && df -h && ps axu"
+	runCommand := "export podName=$(kubectl get po -l app.kubernetes.io/name=" + cr.Name + " -o name | cut -f2 -d/) && kubectl exec $podName -c web -- /opt/script/script.sh"
 	cron := &v1beta1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "web-cron"),
@@ -178,7 +160,7 @@ func (r *ReconcileWebproject) webContainerCronJob(cr *wp.WebProject) *v1beta1.Cr
 
 // searchContainerCronJob - cronjob that will execute a script in searchcontainer if enabled
 func (r *ReconcileWebproject) searchContainerCronJob(cr *wp.WebProject) *v1beta1.CronJob {
-	runCommand := "export podName=$(kubectl get po -l app.kubernetes.io/name=" + cr.Name + " -o name | cut -f2 -d/) && kubectl exec $podName -c search -- hostname && df -h && ps axu"
+	runCommand := "export podName=$(kubectl get po -l app.kubernetes.io/name=" + cr.Name + " -o name | cut -f2 -d/) && kubectl exec $podName -c search -- /opt/script/script.sh"
 	cron := &v1beta1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName(cr, "search-cron"),

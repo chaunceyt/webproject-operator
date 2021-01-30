@@ -26,6 +26,13 @@ func solrSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 		},
 	}
 
+	if cr.Spec.SearchSidecar.CronJob.Enabled {
+		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+			Name:      "search-cron-script",
+			MountPath: "/opt/script",
+		})
+	}
+
 	return container
 }
 
@@ -78,6 +85,13 @@ func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 			ReadOnlyRootFilesystem:   createBool(false),
 			RunAsNonRoot:             createBool(false),
 		},
+	}
+
+	if cr.Spec.SearchSidecar.CronJob.Enabled {
+		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+			Name:      "search-cron-script",
+			MountPath: "/opt/script",
+		})
 	}
 
 	return container
