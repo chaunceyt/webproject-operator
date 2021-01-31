@@ -105,14 +105,10 @@ spec:
 
 
   # cache sidecar image
-  # memcached:1.6.9
-  # redis:6.0.10-alpine
-  # redis
   cacheSidecar:
     enabled: true
     # cache engine: memcached or redis
     engine: redis
-    image: redis:6.0.10-alpine
     redisPassword: "simple"
 
   # file storege size and mountpath

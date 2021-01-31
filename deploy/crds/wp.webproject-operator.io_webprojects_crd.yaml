@@ -68,8 +68,6 @@ spec:
                   type: boolean
                 engine:
                   type: string
-                image:
-                  type: string
                 redisPassword:
                   type: string
               required:

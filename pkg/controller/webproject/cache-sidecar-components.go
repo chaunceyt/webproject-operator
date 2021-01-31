@@ -9,9 +9,10 @@ import (
 // TODO
 // - Make immutable. (ReadOnlyRootFilesystem: true)
 func memcachedCacheContainerSpec(cr *wp.WebProject) corev1.Container {
+	image := "memcached:1.6.9"
 	container := corev1.Container{
-		Image: cr.Spec.CacheSidecar.Image,
 		Name:  "cache",
+		Image: image,
 		Ports: []corev1.ContainerPort{{
 			ContainerPort: int32(11211),
 			Name:          "memcached",
@@ -22,6 +23,32 @@ func memcachedCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 			ReadOnlyRootFilesystem:   createBool(false),
 			RunAsNonRoot:             createBool(false),
 		},
+		Env: []corev1.EnvVar{
+			{
+				Name: "POD_NAME",
+				ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{
+						FieldPath: "metadata.name",
+					},
+				},
+			},
+			{
+				Name: "POD_ID",
+				ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{
+						FieldPath: "metadata.uid",
+					},
+				},
+			},
+			{
+				Name: "POD_NAMESPACE",
+				ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{
+						FieldPath: "metadata.namespace",
+					},
+				},
+			},
+		},
 	}
 
 	return container
@@ -31,15 +58,20 @@ func memcachedCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 // TODO
 // - Make immutable. (ReadOnlyRootFilesystem: true)
 func redisCacheContainerSpec(cr *wp.WebProject) corev1.Container {
-	redisCommand := []string{"redis-server", "/opt/redis/redis.conf"}
+	image := "redis:6.0.10-alpine"
+	command := []string{"redis-server", "/opt/redis/redis.conf"}
 
+	passwordParam := ""
 	password := cr.Spec.CacheSidecar.RedisPassword
-	probeCmd := []string{"sh", "-c", "redis-cli -a " + password + " ping"}
+	if password != "" {
+		passwordParam = " -a " + password
+	}
+	probeCmd := []string{"sh", "-c", "redis-cli", passwordParam, "ping"}
 
 	container := corev1.Container{
 		Name:         "cache",
-		Image:        cr.Spec.CacheSidecar.Image,
-		Command:      redisCommand,
+		Image:        image,
+		Command:      command,
 		VolumeMounts: getRedisVolumeMounts(cr),
 		Ports: []corev1.ContainerPort{{
 			ContainerPort: int32(6379),
@@ -48,7 +80,9 @@ func redisCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: createBool(false),
 			ReadOnlyRootFilesystem:   createBool(false),
-			RunAsNonRoot:             createBool(false),
+			RunAsNonRoot:             createBool(true),
+			RunAsUser:                createInt64(1000),
+			RunAsGroup:               createInt64(1000),
 		},
 		ReadinessProbe: &corev1.Probe{
 			InitialDelaySeconds: 30,
@@ -65,6 +99,32 @@ func redisCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 			Handler: corev1.Handler{
 				Exec: &corev1.ExecAction{
 					Command: probeCmd,
+				},
+			},
+		},
+		Env: []corev1.EnvVar{
+			{
+				Name: "POD_NAME",
+				ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{
+						FieldPath: "metadata.name",
+					},
+				},
+			},
+			{
+				Name: "POD_ID",
+				ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{
+						FieldPath: "metadata.uid",
+					},
+				},
+			},
+			{
+				Name: "POD_NAMESPACE",
+				ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{
+						FieldPath: "metadata.namespace",
+					},
 				},
 			},
 		},
