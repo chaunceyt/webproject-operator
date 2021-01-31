@@ -106,18 +106,31 @@ spec:
 
   # cache sidecar image
   # memcached:1.6.9
+  # redis:6.0.10-alpine
   # redis
   cacheSidecar:
     enabled: true
     # cache engine: memcached or redis
-    engine: memcached
-    image: memcached:1.6.9
+    engine: redis
+    image: redis:6.0.10-alpine
+    redisPassword: "simple"
 
   # file storege size and mountpath
   fileStorageSize: 10Gi
   fileStorageMountPath: /var/www/html/sites/default/files
 
   # imagepullsecrets config information
+  # create sercret
+  # export REGISTRY_SERVER=
+  # export REGISTRY_USER=
+  # export REGISTRY_PASS=
+  # export REGISTRY_EMAIL=
+  # kubectl create secret \
+  # docker-registry dockersecret \
+  #  --docker-server=$REGISTRY_SERVER \
+  #  --docker-username=$REGISTRY_USER \
+  #  --docker-password=$REGISTRY_PASS \
+  #  --docker-email=$REGISTRY_EMAIL
   imagePullSecrets:
     enabled: true
     secretName: dockersecret

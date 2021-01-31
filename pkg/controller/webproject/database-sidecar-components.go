@@ -55,25 +55,13 @@ func databaseContainerSpec(cr *wp.WebProject) corev1.Container {
 			Name:          "database",
 		}},
 
-		VolumeMounts: []corev1.VolumeMount{
-			{
-				Name:      "data-storage",
-				MountPath: cr.Spec.DatabaseSidecar.DatabaseStoreMountPath,
-			},
-		},
+		VolumeMounts: getDatabaseSidecarVolumeMounts(cr),
 
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: createBool(false),
 			ReadOnlyRootFilesystem:   createBool(false),
 			RunAsNonRoot:             createBool(false),
 		},
-	}
-
-	if cr.Spec.DatabaseSidecar.CronJob.Enabled {
-		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-			Name:      "database-cron-script",
-			MountPath: "/opt/script",
-		})
 	}
 
 	return container

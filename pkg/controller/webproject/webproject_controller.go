@@ -229,26 +229,38 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// ensureEnvConfigMap - manage environmental variable config map for webproject.
-	result, err = r.ensureEnvConfigMap(request, webproject, r.envConfigMapForWebproject(webproject))
+	result, err = r.ensureConfigMap(request, webproject, r.envConfigMapForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
 	// ensureCommonConfigMap - manage configmap used to set common environment variables for web and cli containers.
-	result, err = r.ensureCommonConfigMap(request, webproject, r.commonConfigMapForWebproject(webproject))
+	result, err = r.ensureConfigMap(request, webproject, r.commonConfigMapForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
 	// ensureInitContainerConfigMap - manage initcontainer.sh script configmap
-	result, err = r.ensureInitContainerConfigMap(request, webproject, r.initContainerConfigMapForWebproject(webproject))
+	result, err = r.ensureConfigMap(request, webproject, r.initContainerConfigMapForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
+	// ensureInitContainerConfigMap - manage initcontainer.sh script configmap
+	result, err = r.ensureConfigMap(request, webproject, r.initContainerConfigMapForWebproject(webproject))
+	if result != nil {
+		return *result, err
+	}
+
+	// ensureInitContainerConfigMap - manage initcontainer.sh script configmap
+	result, err = r.ensureConfigMap(request, webproject, r.redisConfigMapForWebproject(webproject))
 	if result != nil {
 		return *result, err
 	}
 
 	// ensureWebContainerCronJobConfigMap - manage script configmap
 	if webproject.Spec.WebContainer.CronJob.Enabled {
-		result, err = r.ensureWebContainerCronJobConfigMap(request, webproject, r.webContainerCronJobConfigMapForWebproject(webproject))
+		result, err = r.ensureConfigMap(request, webproject, r.webContainerCronJobConfigMapForWebproject(webproject))
 		if result != nil {
 			return *result, err
 		}
@@ -256,7 +268,7 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 
 	// ensureSearchSidecarCronJobConfigMap - manage script configmap
 	if webproject.Spec.SearchSidecar.CronJob.Enabled {
-		result, err = r.ensureSearchSidecarCronJobConfigMap(request, webproject, r.searchSidecarCronJobConfigMapForWebproject(webproject))
+		result, err = r.ensureConfigMap(request, webproject, r.searchSidecarCronJobConfigMapForWebproject(webproject))
 		if result != nil {
 			return *result, err
 		}
@@ -265,7 +277,7 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 
 	// ensureDatabaseSidecarCronJobConfigMap - manage script configmap
 	if webproject.Spec.DatabaseSidecar.CronJob.Enabled {
-		result, err = r.ensureDatabaseSidecarCronJobConfigMap(request, webproject, r.databaseSidecarCronJobConfigMapForWebproject(webproject))
+		result, err = r.ensureConfigMap(request, webproject, r.databaseSidecarCronJobConfigMapForWebproject(webproject))
 		if result != nil {
 			return *result, err
 		}
@@ -301,6 +313,7 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 		return *result, err
 	}
 
+	// Setup status output.
 	// updateWebProjectStatus
 	// TODO: list each object name within webproject.
 	WebProject := webproject

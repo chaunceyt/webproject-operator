@@ -61,10 +61,11 @@ type WebProjectCronJob struct {
 
 // WebProjectCacheSidecar defines spec for cache sidecar
 type WebProjectCacheSidecar struct {
-	CronJob WebProjectCronJob `json:"cronJob,omitempty"`
-	Enabled bool              `json:"enabled"`
-	Engine  string            `json:"engine,omitempty"`
-	Image   string            `json:"image,omitempty"`
+	CronJob       WebProjectCronJob `json:"cronJob,omitempty"`
+	Enabled       bool              `json:"enabled"`
+	Engine        string            `json:"engine,omitempty"`
+	Image         string            `json:"image,omitempty"`
+	RedisPassword string            `json:"redisPassword,omitempty"`
 }
 
 // WebProjectCLISidecar defines spec for cache sidecar

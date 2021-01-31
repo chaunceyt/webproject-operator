@@ -55,7 +55,14 @@ func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 				Name:          "intra-node-port",
 			},
 		},
-		StartupProbe: &corev1.Probe{
+		Lifecycle: &corev1.Lifecycle{
+			PostStart: &corev1.Handler{
+				Exec: &corev1.ExecAction{
+					Command: []string{"sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"},
+				},
+			},
+		},
+		/*StartupProbe: &corev1.Probe{
 			InitialDelaySeconds: 5,
 			PeriodSeconds:       2,
 			Handler: corev1.Handler{
@@ -63,7 +70,7 @@ func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 					Command: []string{"sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"},
 				},
 			},
-		},
+		},*/
 		Env: []corev1.EnvVar{
 			{
 				Name:  "discovery.type",
@@ -74,12 +81,7 @@ func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 				Value: "-Xms512m -Xmx512m",
 			},
 		},
-		VolumeMounts: []corev1.VolumeMount{
-			{
-				Name:      "search-data",
-				MountPath: "/usr/share/elasticsearch/data",
-			},
-		},
+		VolumeMounts: getElasticSearchVolumeMounts(cr),
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: createBool(false),
 			ReadOnlyRootFilesystem:   createBool(false),
