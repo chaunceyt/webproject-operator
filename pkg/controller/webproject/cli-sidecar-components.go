@@ -10,8 +10,9 @@ import (
 // - Add support for StartupProbe
 func cliContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
-		Image: cr.Spec.CLISidecar.Image,
-		Name:  "cli",
+		Image:     cr.Spec.CLISidecar.Image,
+		Resources: cr.Spec.CLISidecar.Resources,
+		Name:      "cli",
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "webroot",

@@ -17,7 +17,8 @@ func memcachedCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 			ContainerPort: int32(11211),
 			Name:          "memcached",
 		}},
-		Command: []string{"memcached", "-m", "128", "-o", "modern", "-vv"},
+		Command:   []string{"memcached", "-m", "128", "-o", "modern", "-vv"},
+		Resources: cr.Spec.CacheSidecar.Resources,
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: createBool(false),
 			ReadOnlyRootFilesystem:   createBool(false),
@@ -72,6 +73,7 @@ func redisCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 		Name:         "cache",
 		Image:        image,
 		Command:      command,
+		Resources:    cr.Spec.CacheSidecar.Resources,
 		VolumeMounts: getRedisVolumeMounts(cr),
 		Ports: []corev1.ContainerPort{{
 			ContainerPort: int32(6379),

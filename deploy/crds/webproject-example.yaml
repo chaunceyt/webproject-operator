@@ -27,6 +27,10 @@ spec:
   # php:7.4.14-apache-buster
   webContainer:
     image: php:8.0.1-apache-buster
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
     cronJob:
       enabled: true
       schedule: "*/5 * * * *"
@@ -40,6 +44,10 @@ spec:
   cliSidecar:
     enabled: true
     image: outrigger/cli:2-php7.3
+    resources:
+      requests:
+        cpu: 20m
+        memory: 100Mi
 
   # Search sidecar [solr or elasticsearch]
   # solr:8.7.0
@@ -50,10 +58,12 @@ spec:
   #  serverUrl: SEARCH_HOST (localhost:9200)
   searchSidecar:
     enabled: true
-    # es|solr
+    # Chose an search engine ElasticSearch (es) | Solr 8.x (solr)
     engine: solr
-    image: solr:8.7.0
-    #image: elasticsearch:7.10.1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 100Mi
     cronJob:
       enabled: true
       schedule: "*/5 * * * *"
@@ -74,6 +84,10 @@ spec:
     databaseStorageSize: 2Gi
     databaseRootPassword: rootpasswd123
     databaseStorageMountPath: /var/lib/mysql
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
     cronJob:
       enabled: true
       schedule: "*/5 * * * *"
@@ -110,13 +124,17 @@ spec:
     # cache engine: memcached or redis
     engine: redis
     redisPassword: "simple"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
 
   # file storege size and mountpath
   fileStorageSize: 10Gi
   fileStorageMountPath: /var/www/html/sites/default/files
 
   # imagepullsecrets config information
-  # create sercret
+  # To create a sercret for a private registry.
   # export REGISTRY_SERVER=
   # export REGISTRY_USER=
   # export REGISTRY_PASS=
@@ -132,6 +150,7 @@ spec:
     secretName: dockersecret
 
   # Ingress domains
+  # 1 to many
   ingressHosts:
     - domainone
     - domaintwo

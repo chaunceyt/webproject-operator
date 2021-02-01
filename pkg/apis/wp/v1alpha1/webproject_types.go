@@ -15,6 +15,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,8 +43,9 @@ type WebProjectSpec struct {
 
 // WebProjectWebContainer defines to spec for webcontainer
 type WebProjectWebContainer struct {
-	Image   string            `json:"image"`
-	CronJob WebProjectCronJob `json:"cronJob,omitempty"`
+	Image     string                      `json:"image"`
+	CronJob   WebProjectCronJob           `json:"cronJob,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // WebProjectDockerConfig defines setup ImagePullSecret for private registry.
@@ -61,39 +63,43 @@ type WebProjectCronJob struct {
 
 // WebProjectCacheSidecar defines spec for cache sidecar
 type WebProjectCacheSidecar struct {
-	CronJob       WebProjectCronJob `json:"cronJob,omitempty"`
-	Enabled       bool              `json:"enabled"`
-	Engine        string            `json:"engine,omitempty"`
-	RedisPassword string            `json:"redisPassword,omitempty"`
+	CronJob       WebProjectCronJob           `json:"cronJob,omitempty"`
+	Enabled       bool                        `json:"enabled"`
+	Engine        string                      `json:"engine,omitempty"`
+	RedisPassword string                      `json:"redisPassword,omitempty"`
+	Resources     corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // WebProjectCLISidecar defines spec for cache sidecar
 type WebProjectCLISidecar struct {
-	Enabled bool   `json:"enabled"`
-	Image   string `json:"image,omitempty"`
-	Port    int32  `json:"port,omitempty"`
+	Enabled   bool                        `json:"enabled"`
+	Image     string                      `json:"image,omitempty"`
+	Port      int32                       `json:"port,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // WebProjectSearchSidecar defines spec for cache sidecar
 type WebProjectSearchSidecar struct {
-	CronJob WebProjectCronJob `json:"cronJob,omitempty"`
-	Enabled bool              `json:"enabled"`
-	Engine  string            `json:"engine,omitempty"`
-	Image   string            `json:"image,omitempty"`
+	CronJob   WebProjectCronJob           `json:"cronJob,omitempty"`
+	Enabled   bool                        `json:"enabled"`
+	Engine    string                      `json:"engine,omitempty"`
+	Image     string                      `json:"image,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // WebProjectDatabaseSidecar defines the desired state for database sidecar
 type WebProjectDatabaseSidecar struct {
-	Backup                 WebProjectBackup  `json:"backup,omitempty"`
-	CronJob                WebProjectCronJob `json:"cronJob,omitempty"`
-	DatabaseName           string            `json:"databaseName,omitempty"`
-	DatabaseImage          string            `json:"databaseImage,omitempty"`
-	DatabaseUser           string            `json:"databaseUser,omitempty"`
-	DatabaseStorageSize    string            `json:"databaseStorageSize,omitempty"`
-	DatabaseRootPassword   string            `json:"databaseRootPassword,omitempty"`
-	DatabaseStoreMountPath string            `json:"databaseStorageMountPath,omitempty"`
-	DatabaseUserPassword   string            `json:"databaseUserPassword,omitempty"`
-	Enabled                bool              `json:"enabled,omitempty"`
+	Backup                 WebProjectBackup            `json:"backup,omitempty"`
+	CronJob                WebProjectCronJob           `json:"cronJob,omitempty"`
+	DatabaseName           string                      `json:"databaseName,omitempty"`
+	DatabaseImage          string                      `json:"databaseImage,omitempty"`
+	DatabaseUser           string                      `json:"databaseUser,omitempty"`
+	DatabaseStorageSize    string                      `json:"databaseStorageSize,omitempty"`
+	DatabaseRootPassword   string                      `json:"databaseRootPassword,omitempty"`
+	DatabaseStoreMountPath string                      `json:"databaseStorageMountPath,omitempty"`
+	DatabaseUserPassword   string                      `json:"databaseUserPassword,omitempty"`
+	Enabled                bool                        `json:"enabled,omitempty"`
+	Resources              corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // WebProjectBackup defined the spec for backups.

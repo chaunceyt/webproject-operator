@@ -486,8 +486,9 @@ func webprojectlabels(cr *wp.WebProject, component string) map[string]string {
 // Add support for StartupProbe
 func webContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
-		Image: cr.Spec.WebContainer.Image,
-		Name:  "web",
+		Image:     cr.Spec.WebContainer.Image,
+		Resources: cr.Spec.WebContainer.Resources,
+		Name:      "web",
 
 		EnvFrom: []corev1.EnvFromSource{
 			{

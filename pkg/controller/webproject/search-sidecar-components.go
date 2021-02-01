@@ -12,9 +12,11 @@ import (
 // - Add config option for name of configmap containing solr config.
 // - Add support for PVC
 func solrSearchContainerSpec(cr *wp.WebProject) corev1.Container {
+	image := "solr:8.7.0"
 	container := corev1.Container{
-		Image: cr.Spec.SearchSidecar.Image,
-		Name:  "search",
+		Image:     image,
+		Resources: cr.Spec.SearchSidecar.Resources,
+		Name:      "search",
 		Ports: []corev1.ContainerPort{{
 			ContainerPort: int32(8983),
 			Name:          "search-port",
@@ -68,8 +70,9 @@ func solrSearchContainerSpec(cr *wp.WebProject) corev1.Container {
 // - Add support for StartupProbe.
 // - Use for logging solution for webproject. (fluentbit sidecar + kibania)
 func elasticSearchContainerSpec(cr *wp.WebProject) corev1.Container {
+	image := "elasticsearch:7.10.1"
 	container := corev1.Container{
-		Image: cr.Spec.SearchSidecar.Image,
+		Image: image,
 		Name:  "search",
 		Ports: []corev1.ContainerPort{
 			{

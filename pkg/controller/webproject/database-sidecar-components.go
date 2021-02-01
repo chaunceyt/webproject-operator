@@ -28,8 +28,9 @@ pvc
 */
 func databaseContainerSpec(cr *wp.WebProject) corev1.Container {
 	container := corev1.Container{
-		Image: cr.Spec.DatabaseSidecar.DatabaseImage,
-		Name:  "database",
+		Image:     cr.Spec.DatabaseSidecar.DatabaseImage,
+		Name:      "database",
+		Resources: cr.Spec.DatabaseSidecar.Resources,
 
 		Env: []corev1.EnvVar{
 			{
