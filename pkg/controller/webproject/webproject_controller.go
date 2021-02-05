@@ -296,19 +296,19 @@ func (r *ReconcileWebproject) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// ensureCronJob - manage backups for database.
-	result, err = r.ensureWebContainerCronJob(request, webproject, r.webContainerCronJob(webproject))
+	result, err = r.ensureCronJob(request, webproject, r.webContainerCronJob(webproject))
 	if result != nil {
 		return *result, err
 	}
 
 	// ensureCronJob - manage backups for database.
-	result, err = r.ensureSearchContainerCronJob(request, webproject, r.searchContainerCronJob(webproject))
+	result, err = r.ensureCronJob(request, webproject, r.searchContainerCronJob(webproject))
 	if result != nil {
 		return *result, err
 	}
 
 	// ensureCronJob - manage backups for database.
-	result, err = r.ensureDatabaseContainerCronJob(request, webproject, r.databaseContainerCronJob(webproject))
+	result, err = r.ensureCronJob(request, webproject, r.databaseContainerCronJob(webproject))
 	if result != nil {
 		return *result, err
 	}

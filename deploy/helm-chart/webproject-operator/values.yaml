@@ -1,8 +1,10 @@
 # Image for webproject-operator
 image:
   repository: chaunceyt/webproject-operator
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "v0.0.1"
+  namespace:
+    name: webproject-cthorn
 
 

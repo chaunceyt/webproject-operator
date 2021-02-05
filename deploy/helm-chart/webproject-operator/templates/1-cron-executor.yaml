@@ -1,0 +1,34 @@
+{{- $namespace := .Values.namespace.name -}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cronjob-executor
+  namespace: {{ $namespace  }}
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: cronjob-executor-role
+  namespace: {{ $namespace  }}
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: cronjob-executor-rolebinding
+  namespace: {{ $namespace  }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cronjob-executor-role
+subjects:
+- kind: ServiceAccount
+  name: cronjob-executor
+  namespace: {{ $namespace  }}

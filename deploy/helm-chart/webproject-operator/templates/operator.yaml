@@ -1,7 +1,9 @@
+{{- $namespace := .Values.namespace.name -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "webproject-operator.fullname" . }}
+  namespace: {{ $namespace  }}
   labels:
     {{- include "webproject-operator.labels" . | nindent 4 }}
 spec:

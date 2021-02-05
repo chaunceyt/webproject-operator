@@ -1,7 +1,9 @@
+{{- $namespace := .Values.namespace.name -}}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ include "webproject-operator.fullname" . }}
+  namespace: {{ $namespace  }}
   labels:
     {{- include "webproject-operator.labels" . | nindent 4 }}r
 rules:
@@ -80,7 +82,7 @@ rules:
   verbs:
   - get
 - apiGroups:
-  - wp.com
+  - wp.webproject-operator.io
   resources:
   - '*'
   verbs:
@@ -91,3 +93,16 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - batch
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
