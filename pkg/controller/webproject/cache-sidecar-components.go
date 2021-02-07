@@ -21,8 +21,10 @@ func memcachedCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 		Resources: cr.Spec.CacheSidecar.Resources,
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: createBool(false),
-			ReadOnlyRootFilesystem:   createBool(false),
-			RunAsNonRoot:             createBool(false),
+			ReadOnlyRootFilesystem:   createBool(true),
+			RunAsNonRoot:             createBool(true),
+			RunAsUser:                createInt64(1000),
+			RunAsGroup:               createInt64(1000),
 		},
 		Env: []corev1.EnvVar{
 			{
@@ -57,7 +59,7 @@ func memcachedCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 
 // redisCacheContainerSpec - cache sidecar (memcached or redis)
 // TODO
-// - Make immutable. (ReadOnlyRootFilesystem: true)
+// - Make immutable. (ReadOnlyRootFilesystem: true) [WIP]
 func redisCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 	image := "redis:6.0.10-alpine"
 	command := []string{"redis-server", "/opt/redis/redis.conf"}
@@ -81,7 +83,7 @@ func redisCacheContainerSpec(cr *wp.WebProject) corev1.Container {
 		}},
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: createBool(false),
-			ReadOnlyRootFilesystem:   createBool(false),
+			ReadOnlyRootFilesystem:   createBool(true),
 			RunAsNonRoot:             createBool(true),
 			RunAsUser:                createInt64(1000),
 			RunAsGroup:               createInt64(1000),
