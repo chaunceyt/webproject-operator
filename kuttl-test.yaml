@@ -1,0 +1,10 @@
+apiVersion: kudo.dev/v1alpha1
+kind: TestSuite
+#startKIND: true
+#kindNodeCache: true
+#manifestDirs:
+#  - ./tests/manifests
+testDirs:
+  - ./tests/e2e
+timeout: 300
+

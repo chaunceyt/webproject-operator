@@ -1,0 +1,359 @@
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: webprojects.wp.webproject-operator.io
+status:
+  acceptedNames:
+    kind: WebProject
+    listKind: WebProjectList
+    plural: webprojects
+    singular: webproject
+  storedVersions:
+  - v1alpha1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webproject-test-webproject-operator
+  namespace: webproject-test
+  labels:
+    app.kubernetes.io/instance: webproject-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: webproject-operator
+    app.kubernetes.io/version: 0.0.1
+    helm.sh/chart: webproject-operator-0.1.0  
+status:
+  updatedReplicas: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webproject-test
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+status:
+  replicas: 1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webproject-operator-metrics
+  namespace: webproject-test
+  labels:
+    name: webproject-operator
+spec:
+  ports:
+  - name: http-metrics
+    port: 8383
+    protocol: TCP
+    targetPort: 8383
+  - name: cr-metrics
+    port: 8686
+    protocol: TCP
+    targetPort: 8686
+  selector:
+    name: webproject-operator
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webproject-test-webproject-backup-svc
+  namespace: webproject-test
+  ownerReferences:
+    - apiVersion: wp.webproject-operator.io/v1alpha1
+      blockOwnerDeletion: true
+      controller: true
+      kind: WebProject
+      name: webproject-test-webproject  
+  labels:
+    app.kubernetes.io/component: service
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+spec:
+  ports:
+  - name: backup-port
+    port: 3306
+    protocol: TCP
+    targetPort: 3306
+  selector:
+    app.kubernetes.io/name: webproject-test-webproject
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: service
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-svc
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+spec:
+  ports:
+  - name: port
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app.kubernetes.io/name: webproject-test-webproject
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: service
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-solr-svc
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+spec:
+  ports:
+  - name: solr-port
+    port: 8983
+    protocol: TCP
+    targetPort: 8983
+  selector:
+    app.kubernetes.io/name: webproject-test-webproject
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  labels:
+    app.kubernetes.io/component: backup
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-backup-cron
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  labels:
+    app.kubernetes.io/component: cron
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-database-cron
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  labels:
+    app.kubernetes.io/component: cron
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-search-cron
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  labels:
+    app.kubernetes.io/component: cron
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-web-cron
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: config
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-common-config
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: config
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-database-cron-script
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: config
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-env-config
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: config
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-init-container
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: config
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-redis-conf
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: config
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-search-cron-script
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: config
+    app.kubernetes.io/name: webproject-test-webproject
+    app.kubernetes.io/part-of: webproject-test
+    app.kubernetes.io/version: webproject-test
+    provider: webproject-operator
+    release: webproject-test
+  name: webproject-test-webproject-webcontainer-cron-script
+  namespace: webproject-test
+  ownerReferences:
+  - apiVersion: wp.webproject-operator.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebProject
+    name: webproject-test-webproject

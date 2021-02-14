@@ -38,11 +38,13 @@ The core containers in a webproject pod:
 
 Managed Cronjobs
 
-- Cronjobs for each sidecar (WIP)
-- Backup for database sidecar (WIP)
+- Cronjobs for each sidecar
+- Backup for database sidecar
 
 
+### Example Customer Resource
 
+Webproject [manifest](https://github.com/chaunceyt/webproject-operator/blob/master/deploy/crds/webproject-example.yaml)
 
 ### Version
 
